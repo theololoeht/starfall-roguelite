@@ -184,12 +184,11 @@ function dotRegenScaling(p) {
 
 function applyCorrosion(game, e, st, p) {
   if (e.dead) return;
-  const dot = e.dot;
   const layerDps = st.stackDps * (st.dotMul || 1) * dotRegenScaling(p).poisonMul * p.dmgMul;
-  if (dot.stacks === 0) dot.dps = layerDps;
-  else dot.dps = Math.max(dot.dps, layerDps);
-  dot.stacks = Math.min(st.maxStacks, dot.stacks + 1);
-  dot.time = st.stackDuration;
+  applyCorrosionSnapshot(e, {
+    stacks:1, layerDps, maxStacks:st.corrosionBurst?.triggerStacks || st.maxStacks, duration:st.stackDuration,
+    burst:st.corrosionBurst || null,
+  }, game, p.form?.color || '#8dff5d');
 }
 
 function corrosionSporeTick(game, w, dt, p, st, key = 'spore') {
@@ -213,7 +212,7 @@ function corrosionSporeTick(game, w, dt, p, st, key = 'spore') {
     { homing: true, homingRange: range, homingProximity:st.targeting?.acquireRadius || 150,
       homingTurn:st.targeting?.turnSpeed || 4.2, homingSpeed:st.bulletSpeed,
       homingAccel:st.launch?.chaseAccel || 420, ownerAttackId:key, vis: 'spore',
-      corrosion: { stacks:st.stacks, layerDps, maxStacks:st.maxStacks, duration:st.stackDuration },
+      corrosion: { stacks:st.stacks, layerDps, maxStacks:st.corrosionBurst?.triggerStacks || st.maxStacks, duration:st.stackDuration, burst:st.corrosionBurst || null },
       sporeCloud: {
         radius:st.cloudRadius * (st.rangeMul || 1), duration:st.cloudDuration,
         dps:st.cloudDps * p.dmgMul, maxAlive:st.cloudMaxAlive,
@@ -538,7 +537,8 @@ function updateBladeCrownAttack({ game, weapon:w, dt, owner:p, spec:st, key, att
 function drawMistAttack({ ctx, owner:p, weapon:w, spec:st, key, attack }) {
   const rt = attackRuntime(w, key), col = attack?.color || w.def.color;
   const radius = rt.mistRadius || st.radius;
-  FX.glowRing(ctx, p.x, p.y, radius, col, 0.13 + Math.sin(p.t * 2.4) * 0.035, 1.4);
+  const inner = st.zoneRole === 'inner';
+  FX.glowRing(ctx, p.x, p.y, radius, inner ? '#eaffc7' : col, (inner ? 0.23 : 0.11) + Math.sin(p.t * 2.4) * 0.035, inner ? 2.6 : 1.2);
   for (const m of (rt.motes || [])) {
     const alpha = clamp(m.life / m.maxLife, 0, 1);
     FX.mistMote(ctx, m.x, m.y, m.r, col, 0.18 + alpha * 0.42, p.t, m.phase);
@@ -638,7 +638,8 @@ registerAttackHandler('ram', {
 registerAttackHandler('nova', {
   required: ['pulseDmg', 'radius', 'interval', 'stacks', 'stackDps', 'maxStacks', 'stackDuration'],
   update: ({ game, weapon, dt }) => novaTick(game, weapon, dt),
-  estimateDps: (st, p) => st.pulseDmg / st.interval * attackDamageMul(p) * attackSpeedMul(p) + fullCorrosionDps(st, p),
+  estimateDps: (st, p) => st.pulseDmg / st.interval * attackDamageMul(p) * attackSpeedMul(p),
+  estimateSharedDotDps: fullCorrosionDps,
 });
 registerAttackHandler('pulse', {
   required: ['pulseDmg', 'radius', 'interval', 'stacks', 'stackDps', 'maxStacks', 'stackDuration'],
@@ -651,7 +652,8 @@ registerAttackHandler('pulse', {
     FX.telegraphRing(ctx, p.x, p.y, radius * (0.38 + k * 0.1), w.def.color, k, p.t, 14);
     FX.glowCircle(ctx, p.x, p.y, 12 + k * 10, '#dfffb7', 0.2 + k * 0.42);
   },
-  estimateDps: (st, p) => st.pulseDmg / st.interval * attackDamageMul(p) * attackSpeedMul(p) + fullCorrosionDps(st, p),
+  estimateDps: (st, p) => st.pulseDmg / st.interval * attackDamageMul(p) * attackSpeedMul(p),
+  estimateSharedDotDps: fullCorrosionDps,
 });
 registerAttackHandler('spore', {
   required: ['damage', 'range', 'interval', 'bulletSpeed', 'bulletR', 'stacks', 'stackDps', 'maxStacks', 'stackDuration', 'cloudRadius', 'cloudDuration', 'cloudDps', 'cloudMaxAlive', 'life'],
@@ -663,19 +665,22 @@ registerAttackHandler('spore', {
     if (!Number.isFinite(st.capacity?.maxAlive) || st.capacity.maxAlive < 1) throw new Error(`${path}: spore 必须配置 capacity.maxAlive`);
   },
   update: ({ game, weapon, dt, owner, spec, key }) => corrosionSporeTick(game, weapon, dt, owner, spec, key),
-  estimateDps: (st, p) => (st.damage + st.cloudDps * st.cloudDuration) / st.interval * attackDamageMul(p) * attackSpeedMul(p) + fullCorrosionDps(st, p),
+  estimateDps: (st, p) => (st.damage + st.cloudDps * st.cloudDuration) / st.interval * attackDamageMul(p) * attackSpeedMul(p),
+  estimateSharedDotDps: fullCorrosionDps,
 });
 registerAttackHandler('flameblade', {
   required: ['dps', 'range', 'width', 'tick', 'stackEvery', 'stackDps', 'maxStacks', 'stackDuration'],
   update: updateFlamebladeAttack,
   draw: drawFlamebladeAttack,
-  estimateDps: (st, p) => st.dps * (st.twinBlade ? 2 : 1) * (st.bladeDmgMul || 1) * attackDamageMul(p) + fullCorrosionDps(st, p),
+  estimateDps: (st, p) => st.dps * (st.twinBlade ? 2 : 1) * (st.bladeDmgMul || 1) * attackDamageMul(p),
+  estimateSharedDotDps: fullCorrosionDps,
 });
 registerAttackHandler('mist', {
   required: ['dps', 'radius', 'tick', 'emitInterval', 'moteLife', 'maxMotes', 'stackEvery', 'stackDps', 'maxStacks', 'stackDuration'],
   update: updateMistAttack,
   draw: drawMistAttack,
-  estimateDps: (st, p) => st.dps * (st.mistDmgMul || 1) * attackDamageMul(p) + fullCorrosionDps(st, p) + (st.mistCollapse ? 10 * attackDamageMul(p) : 0),
+  estimateDps: (st, p) => st.dps * (st.mistDmgMul || 1) * attackDamageMul(p) + (st.mistCollapse ? 10 * attackDamageMul(p) : 0),
+  estimateSharedDotDps: fullCorrosionDps,
 });
 registerAttackHandler('plague', {
   required: ['dps', 'range', 'width', 'radius', 'tick', 'emitInterval', 'moteLife', 'maxMotes', 'stackEvery', 'stackDps', 'maxStacks', 'stackDuration', 'collapseInterval', 'collapseDmg'],
@@ -685,7 +690,8 @@ registerAttackHandler('plague', {
   },
   update: updatePlagueAttack,
   draw: drawPlagueAttack,
-  estimateDps: (st, p) => st.dps * ((st.bladeDmgMul || 1) * 2 + (st.mistDmgMul || 1)) * attackDamageMul(p) + fullCorrosionDps(st, p) + st.collapseDmg / st.collapseInterval * attackDamageMul(p),
+  estimateDps: (st, p) => st.dps * ((st.bladeDmgMul || 1) * 2 + (st.mistDmgMul || 1)) * attackDamageMul(p) + st.collapseDmg / st.collapseInterval * attackDamageMul(p),
+  estimateSharedDotDps: fullCorrosionDps,
 });
 registerAttackHandler('sword', {
   required: [],

@@ -67,7 +67,7 @@ const RunMonitor = (() => {
       gameTimeStart:game.time, duration:0, level:game.level, kills:0, score:0,
       damageTaken:0, shieldBlocks:0, damageBySource:{}, bossEncounters:{}, offscreenKills:0,
       peakEnemies:0, peakEnemyBullets:0, averageFps:0, minFps:null, lowFrameRatio:0,
-      events:[], samples:[], finalPlayer:null, lastSampleAt:game.time,
+      events:[], samples:[], runtimeErrors:[], finalPlayer:null, lastSampleAt:game.time,
     };
     saveActive();
     updateBadge('RUNNING');
@@ -124,6 +124,20 @@ const RunMonitor = (() => {
     event(blocked ? 'shield_block' : 'damage', { amount, source:sourceName, hp:Math.max(0, game.player.hp) }, game);
   }
 
+  function runtimeError(game, error) {
+    if (!active) return;
+    active.runtimeErrors = active.runtimeErrors || [];
+    const item = {
+      t:Number((game?.time ?? active.duration).toFixed(2)),
+      message:String(error?.message || error || 'unknown error').slice(0, 240),
+      source:String(error?.stack || '').split('\n')[1]?.trim().slice(0, 240) || null,
+    };
+    active.runtimeErrors.push(item);
+    if (active.runtimeErrors.length > 20) active.runtimeErrors.shift();
+    event('runtime_error', item, game);
+    saveActive();
+  }
+
   function bossDefeated(game, boss) {
     if (!active) return;
     const record = active.bossEncounters[boss.type] || (active.bossEncounters[boss.type] = { firstSeen:game.time, phases:{}, defeatedAt:null });
@@ -159,5 +173,5 @@ const RunMonitor = (() => {
     return finished;
   }
 
-  return { enabled, session, targetRuns, start, event, frame, sample, damage, bossDefeated, transition, finish, storageKey:STORAGE_KEY };
+  return { enabled, session, targetRuns, start, event, frame, sample, damage, runtimeError, bossDefeated, transition, finish, storageKey:STORAGE_KEY };
 })();

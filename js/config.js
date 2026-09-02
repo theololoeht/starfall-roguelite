@@ -1,7 +1,7 @@
 // ===== 画布（横板）=====
 const CANVAS_W = 1080, CANVAS_H = 675;
 const WEAPON_SLOTS = 6;
-const BALANCE_REVISION = 'v35-spore-cloud';
+const BALANCE_REVISION = 'v36-plague-cashout';
 
 // ===== 数值配置档 =====
 // 正式版默认使用 actual；测试版使用 ?balance=test；指定 Boss 场景额外加 &debug=boss。
@@ -307,9 +307,9 @@ const SKILL_TREES = {
         nodes: [
           { id: 'n1', name: '扩散介质', desc: '所有范围或射程 +20%', apply(f) { f.rangeMul = (f.rangeMul || 1) * 1.2; } },
           { id: 'n2', name: '催化毒层', desc: '腐蚀层数上限 +3', apply(f) { f.maxStacks += 3; } },
-          { id: 'n3', name: '菌幕续生', desc: '孢子命中后留下的伤害云持续时间 +1.8 秒', apply(f) { f.cloudDuration += 1.8; } },
+          { id: 'n3', name: '菌幕续生', desc: '孢子命中后留下的伤害云持续时间 +1.8 秒', apply(f) { if (Number.isFinite(f.cloudDuration)) f.cloudDuration += 1.8; } },
         ],
-        capstone: { id: 'n0', name: '裂孢菌毯', desc: '孢子云半径 +35%、持续伤害 +25%；解锁焰刃与粒子雾分支', apply(f) { f.cloudRadius *= 1.35; f.cloudDps *= 1.25; } },
+        capstone: { id: 'n0', name: '裂孢菌毯', desc: '孢子云半径 +35%、持续伤害 +25%；解锁焰刃与粒子雾分支', apply(f) { if (Number.isFinite(f.cloudRadius)) f.cloudRadius *= 1.35; if (Number.isFinite(f.cloudDps)) f.cloudDps *= 1.25; } },
         evolutions: [
           { id: 'flameblade', name: '精华 · 连续焰刃', icon: '🔥', color: '#ff9d5d', desc: '将远程孢子改造为朝机头持续喷射的中近程腐蚀焰刃' },
           { id: 'mist', name: '精华 · 粒子毒雾', icon: '🫧', color: '#5dffd2', desc: '释放驻留粒子雾，持续污染机体周围区域' },
@@ -330,11 +330,11 @@ const SKILL_TREES = {
       mist: {
         id: 'mist', name: '粒子毒雾', icon: '🫧', color: '#5dffd2',
         desc: '在世界坐标留下漂浮腐蚀粒子，形成持续范围压制',
-        fire: { mode: 'mist', dps: 12, radius: 135, tick: 0.18, emitInterval: 0.07, moteLife: 1.7, maxMotes: 34, stackEvery: 0.45, stackDps: 2.1, maxStacks: 7, stackDuration: 4.2 },
+        fire: { mode: 'mist', zoneRole: 'outer', dps: 12, radius: 165, tick: 0.18, emitInterval: 0.07, moteLife: 1.7, maxMotes: 34, stackEvery: 0.45, stackDps: 2.1, maxStacks: 7, stackDuration: 4.2 },
         nodes: [
           { id: 'nm1', name: '雾域扩张', desc: '毒雾半径 +28%', apply(f) { f.mistRadiusMul = (f.mistRadiusMul || 1) * 1.28; } },
           { id: 'nm2', name: '粒子增殖', desc: '粒子上限 +50%，雾域伤害 +20%', apply(f) { f.moteMul = (f.moteMul || 1) * 1.5; f.mistDmgMul = (f.mistDmgMul || 1) * 1.2; } },
-          { id: 'nm3', name: '凝滞毒核', desc: '腐蚀伤害 +55%，雾粒驻留更久', apply(f) { f.dotMul = (f.dotMul || 1) * 1.55; f.moteLife *= 1.25; } },
+          { id: 'nm3', name: '凝滞毒核', desc: '腐蚀伤害 +55%，雾粒驻留更久', apply(f) { f.dotMul = (f.dotMul || 1) * 1.55; if (Number.isFinite(f.moteLife)) f.moteLife *= 1.25; } },
         ],
         capstone: { id: 'nm0', name: '孢子坍缩', desc: '每 3 秒使雾域收缩爆发一次', apply(f) { f.mistCollapse = true; } },
         evolutions: [{ id: 'plague', name: '终极 · 环蚀疫焰', icon: '♨️', color: '#eaffc7', desc: '保留原毒雾，新增绕机旋转的双疫焰刃与周期坍缩' }],
@@ -343,18 +343,24 @@ const SKILL_TREES = {
         id: 'plague', name: '疫焰天灾', icon: '♨️', color: '#eaffc7',
         desc: '终极机：根据进化来源新增锁敌或旋转双刃，并维持粒子雾与周期坍缩',
         fire: {
-          mode: 'plague', dps: 28, range: 210, width: 54, radius: 165, tick: 0.12,
+          mode: 'plague', zoneRole: 'inner', dps: 28, range: 210, width: 54, radius: 108, tick: 0.12,
           emitInterval: 0.05, moteLife: 1.9, maxMotes: 46, stackEvery: 0.32,
           stackDps: 4.5, maxStacks: 12, stackDuration: 5, collapseInterval: 2.4, collapseDmg: 34,
           bladeBehaviorByParent: { flameblade: 'targetLock', mist: 'orbit' },
           targetRange: 560, targetTurnSpeed: 6.5, bladeSpread: 0.13, orbitSpeed: 1.65,
+        },
+        globalAttackEffects: {
+          corrosionBurst: {
+            damageRatio: 1,
+            cloud: { radius: 70, duration: 3.6, dps: 12, maxAlive: 8 },
+          },
         },
         nodes: [
           { id: 'np1', name: '天灾延展', desc: '焰刃射程与雾域半径 +18%', apply(f) { f.rangeMul = (f.rangeMul || 1) * 1.18; } },
           { id: 'np2', name: '高压喷流', desc: '焰刃宽度 +25%', apply(f) { f.bladeWidthMul = (f.bladeWidthMul || 1) * 1.25; } },
           { id: 'np3', name: '灾厄密度', desc: '粒子数量 +35%', apply(f) { f.moteMul = (f.moteMul || 1) * 1.35; } },
           { id: 'np4', name: '腐蚀过载', desc: '全部持续伤害 +35%', apply(f) { f.dotMul = (f.dotMul || 1) * 1.35; } },
-          { id: 'np5', name: '坍缩加速', desc: '领域坍缩间隔 -25%', apply(f) { f.collapseInterval *= 0.75; } },
+          { id: 'np5', name: '坍缩加速', desc: '领域坍缩间隔 -25%', apply(f) { if (Number.isFinite(f.collapseInterval)) f.collapseInterval *= 0.75; } },
           { id: 'np6', name: '终末反应', desc: '直接伤害 +30%', apply(f) { f.bladeDmgMul = (f.bladeDmgMul || 1) * 1.3; f.mistDmgMul = (f.mistDmgMul || 1) * 1.3; } },
         ],
         evolutions: [],

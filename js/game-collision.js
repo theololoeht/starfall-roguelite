@@ -11,12 +11,10 @@ class GameCollisionSystem {
         if (!zone) continue;
         b.hits.add(e);
         e.hurt(b.dmg * zone.damageMul, this, true);
-        b.applyCorrosionTo(e);
+        b.applyCorrosionTo(e, this);
         if (b.sporeCloud) {
           const cloud = b.sporeCloud;
-          const aliveClouds = this.sporeClouds.filter(x => !x.dead);
-          if (aliveClouds.length >= cloud.maxAlive) aliveClouds.sort((a, c) => a.life - c.life)[0].dead = true;
-          this.sporeClouds.push(new SporeCloud(b.x, b.y, cloud.radius, cloud.duration, cloud.dps, b.color));
+          spawnSporeCloud(this, b.x, b.y, cloud, b.color);
           this.rings.push(new Ring(b.x, b.y, 5, cloud.radius, 0.32, b.color, 2));
           this.burst(b.x, b.y, b.color, 9, 150);
           b.dead = true;
@@ -26,7 +24,7 @@ class GameCollisionSystem {
         if (b.corrosionRadius) {
           for (const e2 of this.enemies) {
             if (e2 === e || e2.dead || e2.spawning) continue;
-            if (e2.circleHit(b.x, b.y, b.corrosionRadius)) b.applyCorrosionTo(e2);
+            if (e2.circleHit(b.x, b.y, b.corrosionRadius)) b.applyCorrosionTo(e2, this);
           }
           this.rings.push(new Ring(b.x, b.y, 4, b.corrosionRadius, 0.2, b.color, 1.5));
         }

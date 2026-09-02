@@ -18,7 +18,7 @@ const balance = vm.runInContext(`({
   groupMax:BALANCE.pacing.groupMax,
   autoAimTurnSpeed:PLAYER_BASE.autoAimTurnSpeed,
 })`, context);
-assert.equal(balance.revision, 'v35-spore-cloud');
+assert.equal(balance.revision, 'v36-plague-cashout');
 assert(balance.enemyHpMul > 1);
 assert(balance.bossTuning.prism.targetSeconds >= 20 && balance.bossTuning.dragon.maxMul >= 8);
 assert(balance.spawnMin < 0.5 && balance.groupBase >= 2 && balance.groupMax >= 4);

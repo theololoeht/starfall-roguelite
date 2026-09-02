@@ -654,26 +654,27 @@ const Sprites = {
     ctx.rotate(ang);
     const fwd = (len, side = 0) => [len, side];
     if (vis === 'spore') {
-      // 腐蚀孢子：叶片状外壳、亮核与轨道微孢子，和传统实弹保持明显区分。
-      const pulse = 1 + Math.sin((t || 0) * 13) * 0.12;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = hexA(color, 0.24); ctx.lineWidth = r * 1.5;
-      ctx.beginPath(); ctx.moveTo(-r * 5.4, 0); ctx.lineTo(-r * 1.2, 0); ctx.stroke();
+      // 漂浮孢囊：近似圆形、无弹道尾焰；只靠呼吸与卫星粒子表现生命感。
+      const pulse = 1 + Math.sin((t || 0) * 7) * 0.1;
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      FX.glowCircle(ctx, 0, 0, r * 2.5 * pulse, color, 0.78);
+      FX.glowCircle(ctx, 0, 0, r * 2.7 * pulse, color, 0.72);
       ctx.restore();
       ctx.beginPath();
-      ctx.moveTo(r * 1.7, 0); ctx.quadraticCurveTo(0, r * 1.25, -r * 1.2, r * 0.55);
-      ctx.quadraticCurveTo(-r * 0.5, 0, -r * 1.2, -r * 0.55);
-      ctx.quadraticCurveTo(0, -r * 1.25, r * 1.7, 0); ctx.closePath();
+      for (let k = 0; k < 10; k++) {
+        const a = k / 10 * TAU;
+        const rr = r * pulse * (k % 2 ? 0.92 : 1.16);
+        k ? ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      ctx.closePath();
       ctx.fillStyle = hexA('#17351f', 0.95); ctx.fill();
-      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
-      ctx.beginPath(); ctx.arc(r * 0.25, 0, r * 0.42, 0, TAU);
+      ctx.strokeStyle = color; ctx.lineWidth = 1.8; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.43, 0, TAU);
       ctx.fillStyle = '#f4ffd8'; ctx.fill();
-      for (let k = 0; k < 3; k++) {
-        const a = (t || 0) * 6 + k * TAU / 3;
-        ctx.beginPath(); ctx.arc(-r * (1.8 + k * 0.62), Math.sin(a) * r * 0.75, 1.2 + k * 0.15, 0, TAU);
-        ctx.fillStyle = hexA(color, 0.85 - k * 0.15); ctx.fill();
+      for (let k = 0; k < 4; k++) {
+        const a = (t || 0) * 2.2 + k * TAU / 4;
+        const orbit = r * (1.48 + (k % 2) * 0.18);
+        ctx.beginPath(); ctx.arc(Math.cos(a) * orbit, Math.sin(a) * orbit, 1.35 + (k % 2) * 0.4, 0, TAU);
+        ctx.fillStyle = hexA(k % 2 ? '#d7ff8d' : color, 0.88); ctx.fill();
       }
     } else if (vis === 'dart') {
       // 基础形态重弹：尖头镖 + 正后方双激波线
@@ -731,23 +732,6 @@ const Sprites = {
       ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, TAU);
       ctx.fillStyle = '#ffffff'; ctx.fill();
       ctx.strokeStyle = '#ffd25d'; ctx.lineWidth = 1.2; ctx.stroke();
-    } else if (vis === 'spore') {
-      // 腐蚀孢子：四芒十字星（脉动）
-      const pr = r * (0.9 + Math.sin((t || 0) * 9) * 0.12);
-      ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      FX.glowCircle(ctx, 0, 0, pr * 1.9, color, 0.85);
-      ctx.beginPath();
-      for (let k = 0; k < 4; k++) {
-        const a = k * Math.PI / 2;
-        ctx.moveTo(0, 0);
-        ctx.lineTo(Math.cos(a) * pr * 1.9, Math.sin(a) * pr * 1.9);
-        ctx.lineTo(Math.cos(a + Math.PI / 4) * pr * 0.55, Math.sin(a + Math.PI / 4) * pr * 0.55);
-      }
-      ctx.closePath();
-      ctx.fillStyle = hexA(color, 0.85); ctx.fill();
-      ctx.beginPath(); ctx.arc(0, 0, pr * 0.4, 0, TAU);
-      ctx.fillStyle = '#ffffff'; ctx.fill();
-      ctx.restore();
     } else if (vis === 'frag') {
       ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
       ctx.fillStyle = color; ctx.fill();

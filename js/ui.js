@@ -172,12 +172,21 @@ const UI = {
             const radius = f.radius * (f.rangeMul || 1) * (f.mistRadiusMul || 1) * regen.rangeMul, direct = f.dps * (f.mistDmgMul || 1) * p.dmgMul;
             lines = [`雾域持续DPS <b>${direct.toFixed(1)}</b>`, `半径 ${Math.round(radius)}px · 粒子上限 ${Math.round(f.maxMotes * (f.moteMul || 1))}`, `满层腐蚀DPS <span class="dps">${fullDot.toFixed(1)}</span>`];
           } else {
-            const radius = f.radius * (f.rangeMul || 1), range = f.range * (f.rangeMul || 1) * (f.bladeRangeMul || 1);
-            const direct = (f.dps * (f.bladeDmgMul || 1) + f.dps * (f.mistDmgMul || 1)) * p.dmgMul;
+            const innerRadius = f.radius * (f.rangeMul || 1) * regen.rangeMul;
+            const range = f.range * (f.rangeMul || 1) * (f.bladeRangeMul || 1);
             const attack = p.attacks[p.attacks.length - 1], behavior = f.bladeBehaviorByParent?.[attack?.parentFormId] || 'orbit';
             const retained = p.attacks.slice(0, -1).map(a => ({spore:'孢子',flameblade:'焰刃',mist:'毒雾'}[a.mode] || a.mode)).join('+');
+            const outer = p.attacks.find(a => a.mode === 'mist')?.fire;
+            const outerRadius = outer ? outer.radius * (outer.rangeMul || 1) * (outer.mistRadiusMul || 1) * regen.rangeMul : null;
+            const outerDps = outer ? outer.dps * (outer.mistDmgMul || 1) * p.dmgMul : null;
+            const innerDps = f.dps * (f.mistDmgMul || 1) * p.dmgMul;
+            const burst = fullDot * f.stackDuration * (f.corrosionBurst?.damageRatio ?? 1);
             const bladeMode = behavior === 'targetLock' ? `猎杀双刃 · 锁敌 ${f.targetRange}px` : `环蚀双刃 · 转速 ${f.orbitSpeed.toFixed(2)}rad/s`;
-            lines = [`${bladeMode} · 刃长 ${Math.round(range)}px`, `保留 ${retained || '无'} · 雾域 ${Math.round(radius)}px · 坍缩 ${f.collapseDmg}`, `总理论DPS <span class="dps">${p.dpsEstimate.toFixed(1)}</span> · 满层腐蚀 ${fullDot.toFixed(1)}`];
+            lines = [
+              `${bladeMode} · 刃长 ${Math.round(range)}px`,
+              outer ? `外圈低毒 <b>${outerDps.toFixed(1)} DPS</b> / ${Math.round(outerRadius)}px · 内圈高毒 <b>${innerDps.toFixed(1)} DPS</b> / ${Math.round(innerRadius)}px` : `内圈高毒 <b>${innerDps.toFixed(1)} DPS</b> / ${Math.round(innerRadius)}px`,
+              `满 ${f.maxStacks} 层引爆 <span class="dps">${burst.toFixed(0)}</span> 并留下孢子云 · 总理论DPS ${p.dpsEstimate.toFixed(1)}`,
+            ];
           }
           const sig = ['nova', mode, ...lines, p.dmgMul].join(':');
           if (this.cache.dpsSig !== sig) {

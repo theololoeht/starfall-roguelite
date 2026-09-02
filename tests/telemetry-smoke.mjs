@@ -33,6 +33,7 @@ const result = vm.runInContext(`(() => {
   game.player.hp = 88;
   RunMonitor.damage(game, 12, {type:'prism_bullet'}, false);
   RunMonitor.damage(game, 0, {type:'prism_bullet'}, true);
+  RunMonitor.runtimeError(game, new Error('synthetic telemetry error'));
   game.time = 8.4; game.level = 3; game.kills = 7; game.score = 900;
   RunMonitor.bossDefeated(game, boss);
   transitionRunState(game, RUN_STATES.GAMEOVER, 'test-finish');
@@ -44,7 +45,7 @@ const run = result[0];
 assert.equal(run.session, 'test-session');
 assert.equal(run.outcome, 'gameover');
 assert.equal(run.weapon, 'cannon');
-assert.equal(run.balanceRevision, 'v35-spore-cloud');
+assert.equal(run.balanceRevision, 'v36-plague-cashout');
 assert.equal(run.damageTaken, 12);
 assert.equal(run.shieldBlocks, 1);
 assert.equal(run.damageBySource.prism_bullet, 12);
@@ -52,6 +53,9 @@ assert.equal(run.bossEncounters.prism.defeatedAt, 8.4);
 assert.equal(run.level, 3);
 assert.equal(run.peakEnemyBullets, 2);
 assert.equal(run.offscreenKills, 1);
+assert.equal(run.runtimeErrors.length, 1);
+assert.equal(run.runtimeErrors[0].message, 'synthetic telemetry error');
+assert(run.events.some(event => event.type === 'runtime_error'));
 assert(run.events.some(event => event.type === 'boss_defeated'));
 assert(run.events.some(event => event.type === 'state' && event.to === 'gameover'));
 

@@ -45,6 +45,7 @@ class Player {
     const lineage = this.formChain.filter(fid => tree.forms[fid]);
     const policy = tree.progression || { attacks:'replace', upgrades:'current' };
     const chain = policy.attacks === 'retain' ? lineage : [this.formId];
+    const globalEffects = tree.forms[this.formId]?.globalAttackEffects || null;
     this.attacks = chain.map(fid => {
       const fm = tree.forms[fid];
       const f = { ...fm.fire };
@@ -56,11 +57,23 @@ class Player {
         for (const n of cm.nodes) if (this.skills.spent.has(n.id)) n.apply(f);
         if (cm.capstone && this.skills.spent.has(cm.capstone.id)) cm.capstone.apply(f);
       }
+      if (globalEffects?.corrosionBurst && Number.isFinite(f.stackDps)) {
+        f.corrosionBurst = {
+          ...globalEffects.corrosionBurst,
+          cloud: globalEffects.corrosionBurst.cloud ? { ...globalEffects.corrosionBurst.cloud } : null,
+        };
+      }
       return {
         formId: fid, parentFormId, evolutionPath: lineage.slice(0, lineageIndex + 1),
         mode: f.mode || 'gun', fire: f, color: fm.color || '#4fd2ff',
       };
     });
+    const finalStackCap = this.attacks[this.attacks.length - 1]?.fire?.maxStacks;
+    if (Number.isFinite(finalStackCap)) {
+      for (const attack of this.attacks) {
+        if (attack.fire.corrosionBurst) attack.fire.corrosionBurst.triggerStacks = finalStackCap;
+      }
+    }
     this.form = tree.forms[this.formId];
     this.fire = this.attacks[this.attacks.length - 1].fire;   // 兼容旧引用（主攻击）
     refreshPlayerAttackMetrics(this);
@@ -848,6 +861,38 @@ class DragonBoss extends Enemy {
   }
 }
 
+// 腐蚀是所有保留攻击共享的敌人状态。统一入口避免子弹与领域各写一套规则。
+function spawnSporeCloud(game, x, y, spec, color) {
+  if (!game || !Array.isArray(game.sporeClouds) || !spec) return null;
+  const maxAlive = Math.max(1, spec.maxAlive || 8);
+  const alive = game.sporeClouds.filter(cloud => !cloud.dead);
+  if (alive.length >= maxAlive) alive.sort((a, b) => a.life - b.life)[0].dead = true;
+  const cloud = new SporeCloud(x, y, spec.radius, spec.duration, spec.dps, color);
+  game.sporeClouds.push(cloud);
+  return cloud;
+}
+
+function applyCorrosionSnapshot(enemy, c, game = null, color = '#8dff5d') {
+  if (!c || !enemy || enemy.dead || !enemy.dot) return false;
+  const dot = enemy.dot;
+  dot.dps = dot.stacks === 0 ? c.layerDps : Math.max(dot.dps, c.layerDps);
+  dot.stacks = Math.min(c.maxStacks, dot.stacks + (c.stacks || 1));
+  dot.time = c.duration;
+  if (!c.burst || dot.stacks < c.maxStacks) return true;
+
+  // 终局结算：把当前全部剩余腐蚀伤害一次打出，然后清空层数重新积累。
+  const damage = dot.dps * dot.stacks * dot.time * (c.burst.damageRatio ?? 1);
+  enemy.dot = { stacks:0, dps:0, time:0 };
+  if (game) {
+    game.rings?.push(new Ring(enemy.x, enemy.y, 8, c.burst.cloud?.radius || 58, 0.42, '#eaffc7', 4));
+    game.burst?.(enemy.x, enemy.y, '#d7ff8d', 14, 190);
+    if (c.burst.cloud) spawnSporeCloud(game, enemy.x, enemy.y, c.burst.cloud, color);
+    if (typeof RunMonitor !== 'undefined') RunMonitor.event('corrosion_burst', { damage:Number(damage.toFixed(2)) }, game);
+  }
+  enemy.hurt(damage, game, true);
+  return true;
+}
+
 // ===== 玩家子弹（荧光弹：光晕 + 拖尾流光）=====
 class Bullet {
   constructor(x, y, vx, vy, dmg, r, pierce, color, opts = {}) {
@@ -877,13 +922,8 @@ class Bullet {
     this.corrosionRadius = opts.corrosionRadius || 0;
     this.sporeCloud = opts.sporeCloud || null;
   }
-  applyCorrosionTo(enemy) {
-    if (!this.corrosion || !enemy || enemy.dead || !enemy.dot) return false;
-    const c = this.corrosion, dot = enemy.dot;
-    dot.dps = dot.stacks === 0 ? c.layerDps : Math.max(dot.dps, c.layerDps);
-    dot.stacks = Math.min(c.maxStacks, dot.stacks + c.stacks);
-    dot.time = c.duration;
-    return true;
+  applyCorrosionTo(enemy, game = null) {
+    return applyCorrosionSnapshot(enemy, this.corrosion, game, this.color);
   }
   update(dt, game) {
     // 蜂群制导：轻微转向最近敌机

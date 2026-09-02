@@ -100,15 +100,27 @@ function estimateAttackDps(kind, spec, player) {
   return Number.isFinite(value) && value >= 0 ? value : 0;
 }
 
+function estimateAttackSharedDotDps(kind, spec, player) {
+  const handler = ATTACK_HANDLERS[kind];
+  if (!handler?.estimateSharedDotDps) return 0;
+  const value = handler.estimateSharedDotDps(spec, player);
+  return Number.isFinite(value) && value >= 0 ? value : 0;
+}
+
 function estimatePlayerAttackDps(player, weapon = player?.mainWeapon) {
   if (!player || !weapon) return 0;
   const attacks = player.attacks?.length
     ? player.attacks
     : [{ formId: 'base', mode: canonicalAttackKind(weapon.def.type), fire: weapon.stats }];
-  return attacks.reduce((sum, attack) => {
+  let directDps = 0;
+  let sharedDotDps = 0;
+  for (const attack of attacks) {
     const kind = inferAttackKind(player.treeId, attack.fire, attack.mode || weapon.def.type);
-    return sum + estimateAttackDps(kind, attack.fire, player);
-  }, 0);
+    directDps += estimateAttackDps(kind, attack.fire, player);
+    // 腐蚀层挂在敌人身上并由所有攻击共享，只取最高层伤，不能按攻击段重复相加。
+    sharedDotDps = Math.max(sharedDotDps, estimateAttackSharedDotDps(kind, attack.fire, player));
+  }
+  return directDps + sharedDotDps;
 }
 
 function refreshPlayerAttackMetrics(player) {

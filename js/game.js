@@ -108,6 +108,7 @@ class Game {
     } catch (e) {
       // 单帧异常不再杀掉整个 rAF 循环
       this.errMsg = e.message + ' @' + (e.stack || '').split('\n')[1];
+      if (typeof RunMonitor !== 'undefined') RunMonitor.runtimeError(this, e);
       console.error('[Starfall]', e);
     } finally {
       requestAnimationFrame(this.loop);
