@@ -61,6 +61,10 @@ node tests/sword-progression-smoke.mjs
 node tests/run-state-smoke.mjs
 node tests/game-systems-smoke.mjs
 node tests/telemetry-smoke.mjs
+node tests/boss-pacing-smoke.mjs
+node tests/spore-cloud-smoke.mjs
+node tests/playtest-feedback-smoke.mjs
+node tests/plague-cashout-smoke.mjs
 ```
 
 ## 项目结构
