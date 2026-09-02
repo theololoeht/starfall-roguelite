@@ -548,7 +548,7 @@ const ENEMY_SPAWN_ROSTER = ENEMY_SPAWN_ROSTER_BASE.map(rule => ({
 }));
 
 const BOSS_SCHEDULE = [
-  { type: 'dragon', at: BALANCE.pacing.bossAt, announce: '⚠ 星蚀龙正在进入战场' },
+  { type: 'dragon', at: BALANCE.pacing.bossAt, final: true, intro: 1.4, announce: '⚠ 星蚀龙正在进入战场' },
 ];
 
 // ===== 大批量生成方案（每波开始时随机执行一个，数量随玩家输出预算缩放）=====

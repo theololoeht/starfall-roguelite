@@ -11,10 +11,11 @@
 - 标准化攻击描述，覆盖弹体、范围、环绕、主动瞄准与持续伤害等行为。
 - 普通敌人、阵型、生成上限和预警机制。
 - 龙 Boss 的盘旋突击、身体碰撞区、身体弹幕和三阶段吐息。
+- 明确的一局状态机、最终 Boss 胜利结算和本地自动试玩验收。
 - `actual` 与 `test` 两套数值配置，方便正常游玩和快速调试。
 - 无构建步骤、无后端依赖，可由任意静态文件服务器运行。
 
-> 当前状态：可玩的开发版原型。完整胜利结算、中期 Boss、音效和全部武器分支仍在开发中。
+> 当前状态：可通关的开发版原型。中期 Boss、音效、引导与正式 6–8 分钟节奏仍在开发中。
 
 ## 本地运行
 
@@ -36,6 +37,7 @@ http://127.0.0.1:8765/
 http://127.0.0.1:8765/?balance=test
 http://127.0.0.1:8765/?balance=test&debug=boss
 http://127.0.0.1:8765/?balance=test&debugForm=plague
+http://127.0.0.1:8765/?balance=test&debug=boss&autoplay=1&weapon=sword
 ```
 
 ## 测试
@@ -52,6 +54,7 @@ node tests/attack-framework-smoke.mjs
 node tests/systems-v23-smoke.mjs
 node tests/playable-weapons-smoke.mjs
 node tests/sword-progression-smoke.mjs
+node tests/run-state-smoke.mjs
 ```
 
 ## 项目结构
@@ -75,7 +78,7 @@ style.css     页面与 UI 样式
 
 ## 后续计划
 
-1. 提取一局状态机，明确暂停、升级、Boss 演出和结算的计时边界。
-2. 拆分游戏循环、实体、成长、出怪和 Boss 职责。
-3. 增加中期 Boss、胜利结算与完整 6–8 分钟通关闭环。
+1. 拆分游戏循环、实体、成长、出怪和 Boss 职责。
+2. 增加中期 Boss并调整正式 6–8 分钟通关节奏。
+3. 把本地自动试玩升级为持续集成可执行的浏览器测试。
 4. 补齐音效、设置、引导和浏览器端完整流程测试。

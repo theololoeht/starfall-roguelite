@@ -37,12 +37,14 @@ const UI = {
     for (const id of ['hp-fill', 'hp-text', 'xp-fill', 'xp-text', 'level-text', 'time-text', 'wave-text',
       'stat-strip', 'weapon-slots', 'menu', 'gameover', 'run-summary',
       'weapon-pick', 'archetype-bp', 'start-btn', 'sword-slot', 'sword-cd', 'menu-btn',
-      'choices', 'choices-title', 'choice-cards', 'dps-panel', 'hud']) {
+      'choices', 'choices-title', 'choice-cards', 'dps-panel', 'hud', 'victory', 'victory-summary']) {
       this.els[id.replace(/-/g, '_')] = document.getElementById(id);
     }
     this.els.start_btn.onclick = () => { if (this.archId) this.startRun(); };
     this.els.menu_btn.onclick = () => this.showMenu();
     document.getElementById('retry-btn').onclick = () => this.startRun();
+    document.getElementById('victory-retry-btn').onclick = () => this.startRun();
+    document.getElementById('victory-menu-btn').onclick = () => this.showMenu();
     this.buildMenu();
     this.buildArchetypes();
   },
@@ -63,7 +65,7 @@ const UI = {
       const div = document.createElement('div');
       div.className = 'card kind-merge';
       div.innerHTML = `<div class="icon">⬢</div><div class="name">蜂巢技能树</div><div class="tag">⬢ ${game.player.skills.points} 点待点亮</div><div class="desc">打开技能树：强化带特殊效果的蜂窝，或进化攻击形态（之后可按 T 再打开）</div>`;
-      div.onclick = () => { wrap.innerHTML = ''; this.hideStatChoice(); game.openTree(); };
+      div.onclick = () => { wrap.innerHTML = ''; this.hideStatChoice(); game.openTree(RUN_STATES.LEVELUP); };
       wrap.appendChild(div);
     }
     this.els.choices.classList.remove('hidden');
@@ -73,9 +75,10 @@ const UI = {
 
   // 返回开始页面（保留上局武器/流派选择，可直接调整后再次出击）
   showMenu() {
-    game.state = 'menu';
+    game.enterMenu();
     this.els.menu.classList.remove('hidden');
     this.els.gameover.classList.add('hidden');
+    this.els.victory.classList.add('hidden');
   },
 
   buildMenu() {
@@ -123,6 +126,7 @@ const UI = {
     game.reset(this.selected, this.archId);
     this.els.menu.classList.add('hidden');
     this.els.gameover.classList.add('hidden');
+    this.els.victory.classList.add('hidden');
     this.hideStatChoice();
   },
 
@@ -247,5 +251,12 @@ const UI = {
       `最终等级 <b>Lv ${s.level}</b> · 击坠 <b>${s.kills}</b> 架<br>` +
       `总分 <b>${s.score}</b>`;
     this.els.gameover.classList.remove('hidden');
+  },
+
+  showVictory(s) {
+    this.els.victory_summary.innerHTML =
+      `用时 <b>${fmtTime(s.time)}</b> · 最终等级 <b>Lv ${s.level}</b><br>` +
+      `击坠 <b>${s.kills}</b> 架 · 总分 <b>${s.score}</b>`;
+    this.els.victory.classList.remove('hidden');
   },
 };

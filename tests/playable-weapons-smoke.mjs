@@ -5,7 +5,7 @@ import vm from 'node:vm';
 const root = new URL('../', import.meta.url);
 const context = vm.createContext({ console, Math, performance: { now: () => 0 } });
 for (const file of [
-  'js/utils.js', 'js/fx.js', 'js/config.js', 'js/attacks.js', 'js/spawns.js',
+  'js/utils.js', 'js/fx.js', 'js/config.js', 'js/run-state.js', 'js/attacks.js', 'js/spawns.js',
   'js/sprites.js', 'js/entities.js', 'js/weapons.js', 'js/game.js',
 ]) {
   vm.runInContext(fs.readFileSync(new URL(file, root), 'utf8'), context, { filename: file });

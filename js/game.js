@@ -8,7 +8,7 @@ class Game {
     for (let i = 0; i < 90; i++) this.stars.push({ x: rand(0, this.W), y: rand(0, this.H), r: rand(0.4, 1.6), s: rand(12, 60), tw: rand(0, TAU) });
     this.bgScroll = 0;
     this.nebulaCv = this.buildNebula();
-    this.state = 'menu';
+    this.state = RUN_STATES.MENU;
     this.beams = []; this.dragonBreaths = []; this.rings = []; this.flashes = []; this.zaps = []; this.mines = [];
     this.shakeMag = 0;
     this.last = performance.now();
@@ -66,12 +66,15 @@ class Game {
     this.shakeMag = 0;
     this.pickHandler = null;
     this.treeHover = null;
-    this.state = 'playing';
+    this.treeReturnState = RUN_STATES.PLAYING;
+    this.bossIntroT = 0;
+    transitionRunState(this, RUN_STATES.PLAYING, 'reset', true);
     // 同步隐藏 DOM 浮层（防止程序化重开时残留）
     if (typeof UI !== 'undefined' && UI.els) {
       if (UI.els.gameover) UI.els.gameover.classList.add('hidden');
       if (UI.els.menu) UI.els.menu.classList.add('hidden');
-      if (UI.els.levelup) UI.els.levelup.classList.add('hidden');
+      if (UI.els.choices) UI.els.choices.classList.add('hidden');
+      if (UI.els.victory) UI.els.victory.classList.add('hidden');
     }
   }
 
@@ -79,7 +82,8 @@ class Game {
     const dt = Math.min(0.033, (now - this.last) / 1000);
     this.last = now;
     try {
-      if (this.state === 'playing') this.update(dt);
+      if (this.state === RUN_STATES.PLAYING) this.update(dt);
+      else if (this.state === RUN_STATES.BOSS_INTRO) this.updateBossIntro(dt);
       this.draw();
       UI.syncHUD(this);
       if (this.errMsg) {
@@ -145,7 +149,7 @@ class Game {
     this.shakeMag = Math.max(0, this.shakeMag - dt * 14);
 
     if (this.player.hp <= 0) {
-      this.state = 'gameover';
+      transitionRunState(this, RUN_STATES.GAMEOVER, 'player-defeated');
       UI.showGameOver({ time: this.time, wave: this.wave, level: this.level, kills: this.kills, score: this.score });
     }
   }
@@ -287,8 +291,17 @@ class Game {
         this.spawnQueue.length = 0;
         this.enemies.push(new DragonBoss(-90, this.H * 0.28, this.hpScale()));
         this.announce = { text: event.announce, t: 3.2 };
+        this.bossIntroT = event.intro || 1.2;
+        transitionRunState(this, RUN_STATES.BOSS_INTRO, `boss:${event.type}`);
       }
     }
+  }
+
+  updateBossIntro(dt) {
+    this.bossIntroT -= dt;
+    this.bgScroll += dt * 7;
+    if (this.announce) { this.announce.t -= dt; if (this.announce.t <= 0) this.announce = null; }
+    if (this.bossIntroT <= 0) transitionRunState(this, RUN_STATES.PLAYING, 'boss-intro-complete');
   }
 
   collide() {
@@ -419,6 +432,10 @@ class Game {
     this.rings.push(new Ring(e.x, e.y, e.r, e.r * 3.2, 0.4, e.def.color, 3));
     this.burst(e.x, e.y, e.def.color, 8 + Math.floor(e.r / 3), e.r * 7);
     this.shake(e.r / 8);
+    if (e.def?.boss && BOSS_SCHEDULE.some(event => event.type === e.type && event.final)) {
+      transitionRunState(this, RUN_STATES.VICTORY, `boss-defeated:${e.type}`);
+      UI.showVictory({ time:this.time, wave:this.wave, level:this.level, kills:this.kills, score:this.score });
+    }
     // 自爆虫：死亡时殉爆（对玩家造成范围伤害）
     if (e.def.bomb) this.explosionHostile(e.x, e.y, e.def.bomb.r, scaledEnemyDamage(e.def.bomb.dmg), e.def.color);
     // 蜂巢母体：死亡释放一批蜂群（受硬上限约束）
@@ -461,7 +478,7 @@ class Game {
   }
 
   openChoice() {
-    this.state = 'levelup';
+    transitionRunState(this, RUN_STATES.LEVELUP, 'stat-choice');
     UI.showStatChoice(this.buildStatCards(), c => this.pickStat(c));
   }
 
@@ -478,20 +495,31 @@ class Game {
       UI.showStatChoice(this.buildStatCards(), c => this.pickStat(c));   // 连升多级：只重建一次
     } else {
       UI.hideStatChoice();
-      this.state = 'playing';
+      transitionRunState(this, RUN_STATES.PLAYING, 'stat-choice-complete');
     }
   }
 
   hpScale() { return 1 + this.time * BALANCE.growth.hpPerSecond + (this.wave - 1) * BALANCE.growth.hpPerWave; }
 
   // ── 蜂巢技能树 ──
-  openTree() { if (this.player && this.player.treeId) { this.state = 'tree'; this.treeHover = null; this.treeSel = null; } }
-  closeTree() {
-    if (this.state !== 'tree') return;
-    this.state = 'playing';
-    if (this.statPending > 0) this.openChoice();
+  openTree(returnState = RUN_STATES.PLAYING) {
+    if (!this.player?.treeId) return false;
+    if (![RUN_STATES.PLAYING, RUN_STATES.LEVELUP].includes(this.state)) return false;
+    this.treeReturnState = returnState === RUN_STATES.LEVELUP ? RUN_STATES.LEVELUP : RUN_STATES.PLAYING;
+    transitionRunState(this, RUN_STATES.TREE, 'open-skill-tree');
+    this.treeHover = null; this.treeSel = null;
+    return true;
   }
-  toggleTree() { this.state === 'tree' ? this.closeTree() : this.openTree(); }
+  closeTree() {
+    if (this.state !== RUN_STATES.TREE) return;
+    const target = this.treeReturnState === RUN_STATES.LEVELUP && this.statPending > 0 ? RUN_STATES.LEVELUP : RUN_STATES.PLAYING;
+    transitionRunState(this, target, 'close-skill-tree');
+    if (target === RUN_STATES.LEVELUP) UI.showStatChoice(this.buildStatCards(), c => this.pickStat(c));
+  }
+  toggleTree() {
+    if (this.state === RUN_STATES.TREE) this.closeTree();
+    else if (this.state === RUN_STATES.PLAYING) this.openTree(RUN_STATES.PLAYING);
+  }
 
   // 标准蜂窝：平顶六边形密铺，中心紧贴环绕 6 格
   // 方位：正上=终极，左上/右上=精华方向，左下/正下/右下=强化
@@ -709,9 +737,11 @@ class Game {
   addFloat(x, y, text, color, size) { this.floats.push(new FloatText(x, y, text, color, size)); }
   shake(m) { this.shakeMag = Math.max(this.shakeMag, m); }
   togglePause() {
-    if (this.state === 'playing') this.state = 'paused';
-    else if (this.state === 'paused') this.state = 'playing';
+    if (this.state === RUN_STATES.PLAYING) transitionRunState(this, RUN_STATES.PAUSED, 'pause');
+    else if (this.state === RUN_STATES.PAUSED) transitionRunState(this, RUN_STATES.PLAYING, 'resume');
   }
+
+  enterMenu() { transitionRunState(this, RUN_STATES.MENU, 'return-menu'); }
 
   // ── 绘制（霓虹发光渲染管线）──
   draw() {

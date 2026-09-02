@@ -9,9 +9,9 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
   }
   if (e.code === 'Tab' || e.code === 'KeyT') { e.preventDefault(); game.toggleTree(); }
-  if (e.code === 'Escape') { game.state === 'tree' ? game.closeTree() : game.togglePause(); }
-  if (e.code === 'KeyP' && game.state !== 'tree') game.togglePause();
-  if (e.code === 'KeyQ' && game.state === 'paused') UI.showMenu();   // 暂停中返回主菜单
+  if (e.code === 'Escape') { game.state === RUN_STATES.TREE ? game.closeTree() : game.togglePause(); }
+  if (e.code === 'KeyP' && game.state !== RUN_STATES.TREE) game.togglePause();
+  if (e.code === 'KeyQ' && game.state === RUN_STATES.PAUSED) UI.showMenu();   // 暂停中返回主菜单
 });
 window.addEventListener('keyup', e => { input.keys[e.code] = false; });
 
@@ -27,7 +27,7 @@ canvas.addEventListener('pointerdown', e => {
   setPointer(e);
   try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
   if (e.button === 2) { game.trySword(); return; }          // 右键：挥刀清弹幕
-  if (game.state === 'tree') game.treeClick(input.mx, input.my);
+  if (game.state === RUN_STATES.TREE) game.treeClick(input.mx, input.my);
 });
 
 validateAllAttackDefinitions();
