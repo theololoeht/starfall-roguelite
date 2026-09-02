@@ -7,7 +7,7 @@ const context = vm.createContext({ console, Math, performance: { now: () => 0 } 
 for (const file of [
   'js/utils.js', 'js/fx.js', 'js/config.js', 'js/run-state.js', 'js/attacks.js', 'js/spawns.js',
   'js/sprites.js', 'js/entities.js', 'js/weapons.js', 'js/game-spawning.js', 'js/game-collision.js',
-  'js/game-encounter.js', 'js/game-progression.js', 'js/game.js', 'js/ui.js',
+  'js/game-encounter.js', 'js/game-progression.js', 'js/game-skill-tree.js', 'js/game-effects.js', 'js/game.js', 'js/ui.js',
 ]) {
   vm.runInContext(fs.readFileSync(new URL(file, root), 'utf8'), context, { filename:file });
 }
