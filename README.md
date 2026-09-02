@@ -50,6 +50,7 @@ node tests/archetype-art-smoke.mjs
 node tests/dragon-motion-smoke.mjs
 node tests/attack-framework-smoke.mjs
 node tests/systems-v23-smoke.mjs
+node tests/playable-weapons-smoke.mjs
 ```
 
 ## 项目结构
@@ -66,6 +67,7 @@ style.css     页面与 UI 样式
 设计和数值说明见：
 
 - [DESIGN.md](DESIGN.md)
+- [ARCHITECTURE.md](ARCHITECTURE.md)
 - [BALANCE.md](BALANCE.md)
 - [BULLETS.md](BULLETS.md)
 - [MONSTERS.md](MONSTERS.md)
@@ -76,4 +78,3 @@ style.css     页面与 UI 样式
 2. 拆分游戏循环、实体、成长、出怪和 Boss 职责。
 3. 增加中期 Boss、胜利结算与完整 6–8 分钟通关闭环。
 4. 补齐音效、设置、引导和浏览器端完整流程测试。
-

@@ -437,6 +437,14 @@ const SKILL_TREES = {
   },
 };
 
+// ===== 正式内容边界 =====
+// 只有这里列出的武器可以出现在正式开局菜单中。原型定义可以继续留在
+// WEAPON_DEFS 供开发验证，但不得因为“有一条数值配置”就被视为可交付内容。
+const PLAYABLE_WEAPON_IDS = Object.freeze(['cannon', 'nova', 'sword']);
+const EXPERIMENTAL_WEAPON_IDS = Object.freeze(
+  Object.keys(WEAPON_DEFS).filter(id => !PLAYABLE_WEAPON_IDS.includes(id)),
+);
+
 // ===== 周期性规律编队（八方：以玩家为中心，从任意方向边缘包抄）=====
 // build() 返回编队单元：{type, angle(八方向角), perp(垂直偏移), delay(入场延迟)}
 function pick8Angle() { return Math.floor(rand(0, 8)) / 8 * TAU + rand(-0.12, 0.12); }

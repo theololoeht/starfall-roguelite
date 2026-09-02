@@ -54,14 +54,13 @@ const UI = {
   buildMenu() {
     const wrap = this.els.weapon_pick;
     wrap.innerHTML = '';
-    for (const id of Object.keys(WEAPON_DEFS)) {
+    for (const id of PLAYABLE_WEAPON_IDS) {
       const d = WEAPON_DEFS[id];
-      const ready = !!SKILL_TREES[id];   // 技能树已建成的武器才可选
       const div = document.createElement('div');
-      div.className = 'wcard' + (id === this.selected ? ' sel' : '') + (ready ? '' : ' disabled');
+      div.className = 'wcard' + (id === this.selected ? ' sel' : '');
       div.style.setProperty('--wc', d.color);
-      div.innerHTML = `<div class="icon">${d.icon}</div><div class="name">${d.name}</div><div class="tag">${ready ? d.tag : d.tag + ' · 树施工中'}</div><div class="desc">${d.desc}</div>`;
-      if (ready) div.onclick = () => { this.selected = id; this.buildMenu(); };
+      div.innerHTML = `<div class="icon">${d.icon}</div><div class="name">${d.name}</div><div class="tag">${d.tag}</div><div class="desc">${d.desc}</div>`;
+      div.onclick = () => { this.selected = id; this.buildMenu(); };
       wrap.appendChild(div);
     }
   },

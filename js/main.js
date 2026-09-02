@@ -31,6 +31,7 @@ canvas.addEventListener('pointerdown', e => {
 });
 
 validateAllAttackDefinitions();
+validatePlayableWeaponDefinitions();
 validateSpawnDefinitions();
 const game = new Game(canvas);
 UI.init();

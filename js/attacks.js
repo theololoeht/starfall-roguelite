@@ -136,3 +136,33 @@ function validateAllAttackDefinitions() {
   }
   return true;
 }
+
+function validatePlayableWeaponDefinitions() {
+  if (!Array.isArray(PLAYABLE_WEAPON_IDS) || PLAYABLE_WEAPON_IDS.length === 0) {
+    throw new Error('PLAYABLE_WEAPON_IDS: 正式武器列表不能为空');
+  }
+  if (new Set(PLAYABLE_WEAPON_IDS).size !== PLAYABLE_WEAPON_IDS.length) {
+    throw new Error('PLAYABLE_WEAPON_IDS: 存在重复武器 id');
+  }
+
+  for (const id of PLAYABLE_WEAPON_IDS) {
+    const def = WEAPON_DEFS[id];
+    const tree = SKILL_TREES[id];
+    if (!def) throw new Error(`PLAYABLE_WEAPON_IDS.${id}: 缺少 WEAPON_DEFS`);
+    if (!tree) throw new Error(`PLAYABLE_WEAPON_IDS.${id}: 缺少 SKILL_TREES`);
+    if (!tree.forms?.base) throw new Error(`SKILL_TREES.${id}: 缺少 base 形态`);
+
+    for (const [formId, form] of Object.entries(tree.forms)) {
+      const kind = inferAttackKind(id, form.fire, def.type);
+      if (!ATTACK_HANDLERS[kind]) {
+        throw new Error(`SKILL_TREES.${id}.${formId}: 未注册攻击类型 ${kind}`);
+      }
+      for (const evolution of (form.evolutions || [])) {
+        if (!tree.forms[evolution.id]) {
+          throw new Error(`SKILL_TREES.${id}.${formId}: 进化目标 ${evolution.id} 不存在`);
+        }
+      }
+    }
+  }
+  return true;
+}
