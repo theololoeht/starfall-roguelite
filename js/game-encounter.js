@@ -1,17 +1,22 @@
 // Game 子系统：通过 prototype composition 接入，保持原生脚本零构建运行。
 class GameEncounterSystem {
   updateBossSchedule() {
+    if (this.enemies.some(enemy => enemy.def?.boss && !enemy.dead)) return;
     for (const event of BOSS_SCHEDULE) {
       const key = `${event.type}@${event.at}`;
       if (this.time < event.at || this.triggeredBosses.has(key)) continue;
       this.triggeredBosses.add(key);
-      if (event.type === 'dragon') {
-        this.spawnQueue.length = 0;
-        this.enemies.push(new DragonBoss(-90, this.H * 0.28, this.hpScale()));
-        this.announce = { text: event.announce, t: 3.2 };
-        this.bossIntroT = event.intro || 1.2;
-        transitionRunState(this, RUN_STATES.BOSS_INTRO, `boss:${event.type}`);
-      }
+      this.spawnQueue.length = 0;
+      const boss = event.type === 'prism'
+        ? new PrismBoss(this.W / 2, -70, this.hpScale())
+        : event.type === 'dragon'
+          ? new DragonBoss(-90, this.H * 0.28, this.hpScale())
+          : null;
+      if (!boss) throw new Error(`Boss 缺少实体工厂: ${event.type}`);
+      this.enemies.push(boss);
+      this.announce = { text: event.announce, t: 3.2 };
+      this.bossIntroT = event.intro || 1.2;
+      transitionRunState(this, RUN_STATES.BOSS_INTRO, `boss:${event.type}`);
     }
   }
 
@@ -33,6 +38,8 @@ class GameEncounterSystem {
     if (e.def?.boss && BOSS_SCHEDULE.some(event => event.type === e.type && event.final)) {
       transitionRunState(this, RUN_STATES.VICTORY, `boss-defeated:${e.type}`);
       UI.showVictory({ time:this.time, wave:this.wave, level:this.level, kills:this.kills, score:this.score });
+    } else if (e.def?.boss) {
+      this.announce = { text:`✓ ${e.def.name} 已摧毁 · 航道恢复`, t:2.8 };
     }
     // 自爆虫：死亡时殉爆（对玩家造成范围伤害）
     if (e.def.bomb) this.explosionHostile(e.x, e.y, e.def.bomb.r, scaledEnemyDamage(e.def.bomb.dmg), e.def.color);

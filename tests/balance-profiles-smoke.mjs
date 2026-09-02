@@ -12,7 +12,8 @@ function load(search) {
   return vm.runInContext(`({
     mode: BALANCE_MODE,
     profile: JSON.parse(JSON.stringify(BALANCE)),
-    bossAt: BOSS_SCHEDULE[0].at,
+    midBossAt: BOSS_SCHEDULE.find(x => !x.final).at,
+    bossAt: BOSS_SCHEDULE.find(x => x.final).at,
     waveLen: WAVE_LEN,
     firstFormationAt: FIRST_FORMATION_AT,
     unlocks: ENEMY_SPAWN_ROSTER.map(x => [x.type, x.unlockAt]),
@@ -31,6 +32,8 @@ assert.equal(test.mode, 'test');
 assert.equal(fallback.mode, 'actual', '非法或缺失配置档必须安全回退正式数值');
 assert.equal(actual.bossAt, 180);
 assert.equal(test.bossAt, 36);
+assert.equal(actual.midBossAt, 90);
+assert.equal(test.midBossAt, 18);
 assert.equal(actual.waveLen, 30);
 assert.equal(test.waveLen, 12);
 assert.equal(actual.firstFormationAt, 35);
@@ -49,6 +52,6 @@ for (let i = 0; i < actual.unlocks.length; i++) {
 }
 
 console.log('balance-profiles-smoke:', {
-  actual: { bossAt: actual.bossAt, waveLen: actual.waveLen, damage: actual.scaledDamage },
-  test: { bossAt: test.bossAt, waveLen: test.waveLen, damage: test.scaledDamage },
+  actual: { midBossAt:actual.midBossAt, bossAt:actual.bossAt, waveLen:actual.waveLen, damage:actual.scaledDamage },
+  test: { midBossAt:test.midBossAt, bossAt:test.bossAt, waveLen:test.waveLen, damage:test.scaledDamage },
 });

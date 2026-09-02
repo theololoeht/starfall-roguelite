@@ -446,6 +446,64 @@ const Sprites = {
     }
   },
 
+  // ── 折跃棱堡：四棱护盾 + 双层旋转核心 ──
+  prismBoss(ctx, boss, t) {
+    const color = boss.hitT > 0 ? '#ffffff' : boss.def.color;
+    const alpha = boss.spawning ? clamp(1 - boss.spawnT, 0.12, 1) : 1;
+    const poly = (radius, sides, offset = 0) => {
+      ctx.beginPath();
+      for (let i = 0; i < sides; i++) {
+        const a = offset + i / sides * TAU;
+        i ? ctx.lineTo(Math.cos(a) * radius, Math.sin(a) * radius) : ctx.moveTo(Math.cos(a) * radius, Math.sin(a) * radius);
+      }
+      ctx.closePath();
+    };
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.globalCompositeOperation = 'lighter';
+    if (boss.phase === 'ward') {
+      ctx.beginPath();
+      for (let i = 0; i < boss.satellitePoints.length; i++) {
+        const p = boss.satellitePoints[i];
+        i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = hexA(color, 0.32); ctx.lineWidth = 9; ctx.stroke();
+      ctx.strokeStyle = hexA('#d9c7ff', 0.72); ctx.lineWidth = 1.5; ctx.stroke();
+      for (const p of boss.satellitePoints) {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle + t * 0.8);
+        poly(17, 4, Math.PI / 4); ctx.fillStyle = hexA('#120b2d', 0.92); ctx.fill();
+        ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.stroke();
+        poly(8, 4, Math.PI / 4); ctx.fillStyle = hexA('#f7edff', 0.88); ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    ctx.translate(boss.x, boss.y);
+    FX.glowCircle(ctx, 0, 0, boss.r * 2.1, color, boss.phase === 'ward' ? 0.45 : 0.72);
+    ctx.rotate(boss.rot);
+    poly(boss.r * 1.22, 8, Math.PI / 8);
+    ctx.fillStyle = hexA('#100822', 0.96); ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = boss.phase === 'overload' ? 4 : 2.5; ctx.stroke();
+    for (let i = 0; i < 4; i++) {
+      ctx.rotate(Math.PI / 2);
+      ctx.beginPath(); ctx.moveTo(boss.r * 0.42, 0); ctx.lineTo(boss.r * 1.12, -8); ctx.lineTo(boss.r * 0.92, 8); ctx.closePath();
+      ctx.fillStyle = hexA(i % 2 ? '#5de1ff' : color, boss.phase === 'overload' ? 0.82 : 0.48); ctx.fill();
+    }
+    ctx.rotate(-boss.rot * 1.8);
+    poly(boss.r * 0.64, 6, t * 0.35);
+    ctx.fillStyle = hexA(color, 0.22); ctx.fill();
+    ctx.strokeStyle = hexA('#e9dcff', 0.82); ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, boss.r * 0.24 + Math.sin(t * 7) * 2, 0, TAU);
+    ctx.fillStyle = boss.phaseStage === 'transition' || boss.phase === 'overload' ? '#ffcf63' : '#ffffff'; ctx.fill();
+    if (boss.phaseStage === 'transition') {
+      const k = 1 - boss.phaseT / boss.def.transitionDuration;
+      for (let i = 0; i < 3; i++) FX.glowRing(ctx, 0, 0, 28 + i * 16 + k * 18, i === 1 ? '#ffcf63' : color, 0.65 - i * 0.12, 3);
+    }
+    ctx.restore();
+  },
+
   // ── 星蚀龙：侧面轮廓龙头 + 俯视模块身体 ──
   dragon(ctx, boss, t) {
     if (typeof GameAssets !== 'undefined' && GameAssets.dragon.ready) {

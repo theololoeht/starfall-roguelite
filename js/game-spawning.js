@@ -33,6 +33,9 @@ class GameSpawningSystem {
     }
     this.spawnQueue = this.spawnQueue.filter(s => !s.done);
 
+    // Boss 遭遇只处理 Boss 主动排入的召唤请求，暂停自然刷怪与波次预算消费。
+    if (this.enemies.some(e => e.def?.boss && !e.dead)) return;
+
     const waveT = this.time % WAVE_LEN;
     const fieldEmpty = this.enemies.length === 0 && this.spawnQueue.length === 0;
     // 出怪预算：按玩家理论输出上限（DPS 估算）折算每波敌人总血量

@@ -49,5 +49,7 @@ for (const boss of snapshot.bosses) {
   assert(snapshot.defs.includes(boss.type), `Boss 类型缺少定义: ${boss.type}`);
   assert(boss.at > 0, `Boss ${boss.type} 时间点必须为正数`);
 }
+assert.equal(snapshot.bosses.filter(x => x.final).length, 1, '必须且只能有一个最终 Boss');
+assert(snapshot.bosses.some(x => x.type === 'prism' && !x.final), '必须登记折跃棱堡中期 Boss');
 
 console.log(`balance-smoke: ${snapshot.roster.length} natural enemies, ${Object.keys(snapshot.formations).length} formations, ${snapshot.bosses.length} boss event`);

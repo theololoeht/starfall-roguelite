@@ -489,6 +489,159 @@ class Enemy {
 
 }
 
+// ===== 折跃棱堡（中期 Boss）=====
+// 前半段用环形护盾与留缺口弹幕考验走位；半血后护盾解体，进入高速扇射与三轴过载。
+class PrismBoss extends Enemy {
+  constructor(x, y, hpMul = 1) {
+    super('prism', x, y, hpMul, 1.0);
+    this.phase = 'ward';
+    this.phaseStage = 'active';
+    this.phaseT = 0;
+    this.rot = 0;
+    this.fireT = 1.0;
+    this.axisT = this.def.axisInterval;
+    this.summonT = this.def.summonInterval;
+    this.patternOffset = 0;
+    this.satellitePoints = [];
+    this.ringsFired = 0;
+    this.fansFired = 0;
+    this.axesFired = 0;
+    this.summonsQueued = 0;
+  }
+
+  get phaseLabel() {
+    if (this.phaseStage === 'transition') return '核心过载';
+    return this.phase === 'ward' ? '棱镜封锁' : '过载追猎';
+  }
+
+  update(dt, game) {
+    this.age += dt;
+    this.hitT -= dt;
+    if (this.spawning) {
+      this.spawnT -= dt;
+      if (this.spawnT <= 0) this.spawning = false;
+    }
+
+    const p = game.player;
+    this.rot += dt * (this.phase === 'ward' ? 0.7 : 1.8);
+    this.syncSatellites();
+    if (this.spawning) return;
+
+    if (this.phase === 'ward' && this.hp <= this.maxHp * 0.5) {
+      this.phase = 'overload';
+      this.phaseStage = 'transition';
+      this.phaseT = this.def.transitionDuration;
+      this.fireT = 0.55;
+      this.axisT = 1.2;
+      game.rings.push(new Ring(this.x, this.y, 22, 150, 0.7, '#ffcf63', 5));
+      game.flashes.push(new Flash(this.x, this.y, 120, 0.45, this.def.color));
+      game.shake(8);
+    }
+
+    if (this.phaseStage === 'transition') {
+      this.phaseT -= dt;
+      if (this.phaseT <= 0) this.phaseStage = 'active';
+      return;
+    }
+
+    const desiredX = this.phase === 'ward'
+      ? CANVAS_W / 2 + Math.sin(this.age * 0.55) * 150
+      : CANVAS_W / 2 + Math.sin(this.age * 1.05) * CANVAS_W * 0.34;
+    const desiredY = this.phase === 'ward' ? CANVAS_H * 0.24 : CANVAS_H * (0.25 + Math.sin(this.age * 0.72) * 0.09);
+    const follow = Math.min(1, dt * (this.phase === 'ward' ? 2.1 : 3.4));
+    this.x += (desiredX - this.x) * follow;
+    this.y += (desiredY - this.y) * follow;
+    this.syncSatellites();
+
+    this.fireT -= dt;
+    if (this.fireT <= 0) {
+      if (this.phase === 'ward') {
+        this.fireWardRing(game);
+        this.fireT = this.def.wardFireInterval;
+      } else {
+        this.fireOverloadFan(game);
+        this.fireT = this.def.overloadFireInterval;
+      }
+    }
+
+    if (this.phase === 'ward') {
+      this.summonT -= dt;
+      if (this.summonT <= 0) {
+        this.summonT = this.def.summonInterval;
+        const groupId = `boss:prism:${Math.floor(this.age)}`;
+        for (let i = 0; i < this.def.summonCount; i++) {
+          if (game.queueSpawn('mite', this.rot + i / this.def.summonCount * TAU, 0, SPAWN_TELEGRAPH, { source:'boss', groupId })) this.summonsQueued++;
+        }
+      }
+    } else {
+      this.axisT -= dt;
+      if (this.axisT <= 0) {
+        this.axisT = this.def.axisInterval;
+        this.fireAxes(game);
+      }
+    }
+
+    if (this.dot.stacks > 0) {
+      this.dot.time -= dt;
+      this.hurt(this.dot.dps * this.dot.stacks * dt, game, false);
+      if (this.dot.time <= 0) this.dot = { stacks:0, dps:0, time:0 };
+    }
+  }
+
+  fireWardRing(game) {
+    const safeAim = angleTo(this.x, this.y, game.player.x, game.player.y);
+    this.patternOffset += 0.23;
+    for (let i = 0; i < this.def.wardBullets; i++) {
+      const a = this.patternOffset + i / this.def.wardBullets * TAU;
+      const gap = Math.min(Math.abs(angDiff(a, safeAim)), Math.abs(angDiff(a, safeAim + Math.PI)));
+      if (gap < 0.3) continue;
+      game.eBullets.push(new EnemyBullet(this.x, this.y, Math.cos(a) * this.def.bulletSpeed, Math.sin(a) * this.def.bulletSpeed, scaledEnemyDamage(this.def.bulletDmg), this.def.color));
+    }
+    this.ringsFired++;
+    game.rings.push(new Ring(this.x, this.y, 18, 86, 0.4, this.def.color, 3));
+  }
+
+  syncSatellites() {
+    const orbitR = this.phase === 'ward' ? 72 : 48;
+    this.satellitePoints = Array.from({ length:4 }, (_, i) => {
+      const a = this.rot + i / 4 * TAU;
+      return { x:this.x + Math.cos(a) * orbitR, y:this.y + Math.sin(a) * orbitR, angle:a };
+    });
+  }
+
+  fireOverloadFan(game) {
+    const aim = angleTo(this.x, this.y, game.player.x, game.player.y);
+    const n = this.def.overloadFan;
+    for (let i = 0; i < n; i++) {
+      const a = aim + (i - (n - 1) / 2) * 0.13;
+      game.eBullets.push(new EnemyBullet(this.x, this.y, Math.cos(a) * this.def.overloadBulletSpeed, Math.sin(a) * this.def.overloadBulletSpeed, scaledEnemyDamage(this.def.bulletDmg), '#ffcf63'));
+    }
+    this.fansFired++;
+    game.rings.push(new Ring(this.x, this.y, 12, 58, 0.28, '#ffcf63', 3));
+  }
+
+  fireAxes(game) {
+    this.patternOffset += 0.31;
+    for (let i = 0; i < this.def.axisBullets; i++) {
+      const a = this.patternOffset + i / this.def.axisBullets * TAU;
+      const speed = this.def.bulletSpeed * (0.82 + (i % 3) * 0.18);
+      game.eBullets.push(new EnemyBullet(this.x, this.y, Math.cos(a) * speed, Math.sin(a) * speed, scaledEnemyDamage(this.def.bulletDmg), i % 2 ? this.def.color : '#5de1ff'));
+    }
+    this.axesFired++;
+    game.shake(2);
+  }
+
+  getHitZones() {
+    const zones = [{ x:this.x, y:this.y, r:this.r, damageMul:1, kind:'core' }];
+    if (this.phase === 'ward') {
+      for (const point of this.satellitePoints) zones.push({ x:point.x, y:point.y, r:14, damageMul:this.def.shieldDamageMul, kind:'shield' });
+    }
+    return zones;
+  }
+
+  draw(ctx) { Sprites.prismBoss(ctx, this, performance.now() / 1000); }
+}
+
 // ===== 星蚀龙 Boss =====
 // 龙头使用受限转向追逐环绕目标；身体按头部历史轨迹的弧长等距采样。
 // 因此运动与帧率无关，也不会出现“每节独立追踪”造成的橡皮筋抖动。

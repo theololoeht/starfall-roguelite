@@ -4,6 +4,7 @@
   if (!/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || params.get('autoplay') !== '1') return;
 
   const report = { started:false, transitions:[], checks:{}, finished:false };
+  const phaseDemo = params.get('autoplayMode') === 'phases';
   window.__STARFALL_AUTOPLAY_REPORT__ = report;
   const publish = status => {
     document.documentElement.dataset.autoplayStatus = status;
@@ -61,15 +62,21 @@
       report.checks.bossSeen = true;
       report.boss = { type:boss.type, hp:Math.round(boss.hp), spawning:boss.spawning, phase:boss.phase };
     }
-    if (boss && !boss.spawning && game.state === RUN_STATES.PLAYING && elapsed > 4) {
+    if (boss?.type === 'prism' && phaseDemo && !report.checks.midBossOverload && elapsed > 4) {
+      boss.hp = boss.maxHp * 0.49;
+      report.checks.midBossOverload = true;
+    }
+    const killAfter = boss?.type === 'prism' && phaseDemo ? 8 : 4;
+    if (boss && !boss.spawning && game.state === RUN_STATES.PLAYING && elapsed > killAfter) {
       report.checks.bossKillAttempted = true;
-      report.boss.scheduleMatch = BOSS_SCHEDULE.some(event => event.type === boss.type && event.final);
+      const scheduleEvent = BOSS_SCHEDULE.find(event => event.type === boss.type);
+      report.boss.scheduleMatch = !!scheduleEvent;
       boss.hurt(boss.hp + 1, game, true);
       report.boss.afterState = game.state;
       report.boss.afterDead = boss.dead;
       report.boss.lastTransition = game.lastStateTransition;
       report.boss.errMsg = game.errMsg || null;
-      report.checks.bossDefeated = boss.dead && game.state === RUN_STATES.VICTORY;
+      report.checks.bossDefeated = boss.dead && (scheduleEvent?.final ? game.state === RUN_STATES.VICTORY : game.state === RUN_STATES.PLAYING);
       report.liveState = game.state;
       report.bossAlive = !boss.dead;
     }

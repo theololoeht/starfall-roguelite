@@ -14,7 +14,7 @@ const BALANCE_PROFILES = {
       formationInterval: 40, firstFormationAt: 35, spawnTelegraph: 0.55,
       enemySoftCap: 85, enemyHardCap: 150, bossSoftCap: 34, pressure: 0.5,
       spawnBase: 1.5, spawnMin: 0.7, spawnAcceleration: 0.005,
-      emptyFieldAcceleration: 5, groupRampSeconds: 240, bossAt: 180, massShare: 0.55, firstMassAt: 30, massInterval: 30,
+      emptyFieldAcceleration: 5, groupRampSeconds: 240, midBossAt: 90, bossAt: 180, massShare: 0.55, firstMassAt: 30, massInterval: 30,
     },
     growth: { hpPerSecond: 0.005, hpPerWave: 0.02 },
   },
@@ -26,7 +26,7 @@ const BALANCE_PROFILES = {
       formationInterval: 12, firstFormationAt: 8, spawnTelegraph: 0.45,
       enemySoftCap: 60, enemyHardCap: 110, bossSoftCap: 26, pressure: 0.6,
       spawnBase: 0.9, spawnMin: 0.4, spawnAcceleration: 0.008,
-      emptyFieldAcceleration: 8, groupRampSeconds: 48, bossAt: 36, massShare: 0.6, firstMassAt: 10, massInterval: 14,
+      emptyFieldAcceleration: 8, groupRampSeconds: 48, midBossAt: 18, bossAt: 36, massShare: 0.6, firstMassAt: 10, massInterval: 14,
     },
     growth: { hpPerSecond: 0.005, hpPerWave: 0.02 },
   },
@@ -36,7 +36,8 @@ const BALANCE_MODE = BALANCE_QUERY === 'test' ? 'test' : 'actual';
 const BALANCE = BALANCE_PROFILES[BALANCE_MODE];
 const DEBUG_SCENARIO = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('debug') : null;
 const DEBUG_SCENARIOS = {
-  boss: { playerHp: 99999, bossLeadSeconds: 0.25, disableNaturalSpawns: true },
+  boss: { playerHp: 99999, bossType: 'dragon', bossLeadSeconds: 0.25, disableNaturalSpawns: true },
+  midboss: { playerHp: 99999, bossType: 'prism', bossLeadSeconds: 0.25, disableNaturalSpawns: true },
 };
 const DEBUG_SETTINGS = DEBUG_SCENARIOS[DEBUG_SCENARIO] || null;
 
@@ -119,6 +120,13 @@ const ENEMY_DEFS = {
   hive: { // 蜂巢母体：缓慢逼近，周期孵化蜂群；死亡再释放一批
     name: '蜂巢母体', hp: 130, speed: 22, r: 30, dmg: 12, xp: 8, score: 110, color: '#ff6b81',
     hiveEvery: 5, hiveChildren: 2, hiveDeath: 4,
+  },
+  prism: { // 折跃棱堡：中期两阶段几何弹幕 Boss
+    name: '折跃棱堡', hp: 520, speed: 72, r: 34, dmg: 16, xp: 22, score: 760, color: '#b46cff',
+    boss: true, shieldDamageMul: 0.42, wardFireInterval: 2.15, wardBullets: 14,
+    bulletSpeed: 205, bulletDmg: 9, summonInterval: 5.4, summonCount: 3,
+    overloadFireInterval: 1.35, overloadFan: 7, overloadBulletSpeed: 270,
+    axisInterval: 2.8, axisBullets: 12, transitionDuration: 0.9,
   },
   dragon: { // 星蚀龙：三分钟首领，身体由路径采样的独立节段构成
     name: '星蚀龙', hp: 900, speed: 92, r: 27, dmg: 22, xp: 36, score: 1800, color: '#ff4d6d',
@@ -548,6 +556,7 @@ const ENEMY_SPAWN_ROSTER = ENEMY_SPAWN_ROSTER_BASE.map(rule => ({
 }));
 
 const BOSS_SCHEDULE = [
+  { type: 'prism', at: BALANCE.pacing.midBossAt, final: false, intro: 1.1, announce: '⚠ 折跃棱堡封锁航道' },
   { type: 'dragon', at: BALANCE.pacing.bossAt, final: true, intro: 1.4, announce: '⚠ 星蚀龙正在进入战场' },
 ];
 

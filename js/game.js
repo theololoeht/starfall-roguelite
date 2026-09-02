@@ -47,9 +47,11 @@ class Game {
     this.enemies = []; this.pBullets = []; this.eBullets = [];
     this.gems = []; this.trails = []; this.particles = []; this.floats = [];
     this.beams = []; this.dragonBreaths = []; this.rings = []; this.flashes = []; this.zaps = []; this.mines = [];
-    this.debugBoss = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && DEBUG_SCENARIO === 'boss';
+    const localBossDebug = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && DEBUG_SETTINGS?.bossType;
+    const debugBossEvent = localBossDebug ? BOSS_SCHEDULE.find(event => event.type === DEBUG_SETTINGS.bossType) : null;
+    this.debugBoss = !!debugBossEvent;
     if (this.debugBoss) { this.player.maxHp = DEBUG_SETTINGS.playerHp; this.player.hp = DEBUG_SETTINGS.playerHp; }
-    this.time = this.debugBoss ? BOSS_SCHEDULE[0].at - DEBUG_SETTINGS.bossLeadSeconds : 0;
+    this.time = debugBossEvent ? debugBossEvent.at - DEBUG_SETTINGS.bossLeadSeconds : 0;
     this.wave = 1 + Math.floor(this.time / WAVE_LEN); this.kills = 0; this.score = 0;
     this.level = 1; this.xp = 0; this.statPending = 0;
     this.spawnT = Math.min(0.5, BALANCE.pacing.spawnMin);
@@ -62,6 +64,9 @@ class Game {
     this.spawnGroupSeq = 0;
     this.formationHistory = [];
     this.triggeredBosses = new Set();  // 本局已触发的首领时间点
+    if (debugBossEvent) {
+      for (const event of BOSS_SCHEDULE) if (event.at < debugBossEvent.at) this.triggeredBosses.add(`${event.type}@${event.at}`);
+    }
     this.announce = null;
     this.shakeMag = 0;
     this.pickHandler = null;
