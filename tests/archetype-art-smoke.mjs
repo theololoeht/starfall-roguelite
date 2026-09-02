@@ -89,9 +89,10 @@ const result = vm.runInContext(`(() => {
   const swordEnemy = enemyAt(150,100), swordPlayer = basePlayer('sword'), swordWeapon = makeWeapon('sword');
   const swordGame = {player:swordPlayer,enemies:[swordEnemy],nearestEnemy(){return swordEnemy;},burst(){}};
   swordTick(swordGame,swordWeapon,1/60);
-  const swordBefore = {phase:swordWeapon.state.phase,damage:swordEnemy.damage};
+  const swordRt = swordWeapon.attackStates['sword:base:0'];
+  const swordBefore = {phase:swordRt.phase,damage:swordEnemy.damage};
   swordTick(swordGame,swordWeapon,0.2);
-  const swordAfter = {phase:swordWeapon.state.phase,damage:swordEnemy.damage,marks:swordWeapon.state.marks.length};
+  const swordAfter = {phase:swordRt.phase,damage:swordEnemy.damage,marks:swordRt.marks.length};
 
   return {
     ready:[!!SKILL_TREES.nova,!!SKILL_TREES.sword],

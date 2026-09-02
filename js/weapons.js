@@ -391,9 +391,24 @@ function novaTick(game, w, dt) {
   }
 }
 
-// ── 挥剑：弧形斩击 ───────────────────────
+// ── 剑系攻击组：基础斩击保留，进化新增独立攻击 ──
+function swordAttackEntries(p, w) {
+  return p.attacks && p.attacks.length
+    ? p.attacks
+    : [{ formId:'base', mode:'sword_slash', fire:activeWeaponStats(p, w), color:w.def.color }];
+}
+
 function swordTick(game, w, dt) {
-  const p = game.player, st = activeWeaponStats(p, w), s = w.state;
+  const p = game.player;
+  const attacks = swordAttackEntries(p, w);
+  for (let i = 0; i < attacks.length; i++) {
+    const attack = attacks[i], mode = attack.mode || attack.fire.mode || 'sword_slash';
+    runAttackHandler(mode, { game, weapon:w, dt, owner:p, spec:attack.fire, attack, key:`sword:${attack.formId}:${i}` });
+  }
+}
+
+function updateSwordSlashAttack({ game, weapon:w, dt, owner:p, spec:st, key }) {
+  const s = attackRuntime(w, key);
   s.marks = (s.marks || []).filter(m => (m.life -= dt) > 0);
   if (s.phase === 'windup') {
     s.windupT -= dt;
@@ -450,6 +465,72 @@ function drawFlamebladeAttack({ ctx, owner:p, weapon:w, spec:st, key, attack }) 
   }
 }
 
+function updateOrbitBladeAttack({ game, weapon:w, dt, owner:p, spec:st, key }) {
+  const rt = attackRuntime(w, key);
+  rt.angle = (rt.angle || 0) + dt * st.spinSpeed;
+  rt.tickT = (rt.tickT || 0) - dt;
+  const points = Array.from({ length:st.blades }, (_, i) => {
+    const a = rt.angle + i / st.blades * TAU;
+    return { x:p.x + Math.cos(a) * st.radius, y:p.y + Math.sin(a) * st.radius, a };
+  });
+  rt.points = points;
+  if (st.clearBullets) {
+    for (const b of game.eBullets || []) {
+      if (!b.dead && points.some(q => dist2(q.x, q.y, b.x, b.y) <= (st.bladeRadius + b.r) ** 2)) b.dead = true;
+    }
+  }
+  if (rt.tickT > 0) return;
+  rt.tickT = st.tick;
+  for (const e of game.enemies) {
+    if (e.dead || e.spawning) continue;
+    const point = points.find(q => e.circleHit(q.x, q.y, st.bladeRadius));
+    if (!point) continue;
+    const zone = e.circleHit(point.x, point.y, st.bladeRadius);
+    if (zone) e.hurt(st.damage * p.dmgMul * zone.damageMul, game, false);
+  }
+}
+
+function firePhaseWave(game, w, p, st, angle, index, count, color, key) {
+  const side = (index - (count - 1) / 2) * 10;
+  const sideA = angle + Math.PI / 2;
+  game.pBullets.push(new Bullet(
+    p.x + Math.cos(sideA) * side, p.y + Math.sin(sideA) * side,
+    Math.cos(angle) * st.bulletSpeed, Math.sin(angle) * st.bulletSpeed,
+    st.damage * p.dmgMul, st.bulletR, st.pierce, color,
+    { homing:!!st.homing, homingRange:st.range, homingTurn:2.8, kind:'phase', vis:'lance', ownerAttackId:key },
+  ));
+}
+
+function updatePhaseWaveAttack({ game, weapon:w, dt, owner:p, spec:st, key, attack }) {
+  const rt = attackRuntime(w, key);
+  rt.t = (rt.t || 0) - dt;
+  rt.flashT = Math.max(0, (rt.flashT || 0) - dt);
+  if (rt.t > 0) return;
+  const target = game.nearestEnemy(p.x, p.y, st.range);
+  if (!target) { rt.t = 0.1; return; }
+  const angle = angleTo(p.x, p.y, target.x, target.y);
+  const count = st.projectiles || 1;
+  for (let i = 0; i < count; i++) firePhaseWave(game, w, p, st, angle + (i - (count - 1) / 2) * 0.08, i, count, attack?.color || w.def.color, key);
+  rt.t = st.interval / p.atkSpdMul;
+  rt.flashT = 0.14;
+  p.muzzleFlashT = Math.max(p.muzzleFlashT, 0.07);
+}
+
+function updateBladeCrownAttack({ game, weapon:w, dt, owner:p, spec:st, key, attack }) {
+  const rt = attackRuntime(w, key);
+  rt.t = (rt.t || 0) - dt;
+  rt.flashT = Math.max(0, (rt.flashT || 0) - dt);
+  if (rt.t > 0) return;
+  const base = p.aim;
+  for (let i = 0; i < st.projectiles; i++) {
+    const angle = base + i / st.projectiles * TAU;
+    firePhaseWave(game, w, p, { ...st, homing:true }, angle, i, st.projectiles, attack?.color || w.def.color, key);
+  }
+  rt.t = st.interval / p.atkSpdMul;
+  rt.flashT = 0.28;
+  game.rings.push(new Ring(p.x, p.y, 18, 72, 0.32, attack?.color || w.def.color, 3));
+}
+
 function drawMistAttack({ ctx, owner:p, weapon:w, spec:st, key, attack }) {
   const rt = attackRuntime(w, key), col = attack?.color || w.def.color;
   const radius = rt.mistRadius || st.radius;
@@ -465,9 +546,54 @@ function drawPlagueAttack(ctx) {
   drawMistAttack(ctx);
 }
 
-// ===== 武器特效绘制（剑弧 / 刃轮，叠加发光）=====
+function drawSwordSlashAttack({ ctx, owner:p, weapon:w, spec:st, key, attack }) {
+  const s = attackRuntime(w, key), color = attack?.color || w.def.color;
+  if (s.phase === 'windup') {
+    const k = 1 - s.windupT / s.windupMax;
+    const mid = s.start + s.dir * st.arc * 0.5;
+    FX.telegraphRing(ctx, p.x, p.y, 26 + k * 6, color, k, p.t, 8);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    ctx.beginPath(); ctx.moveTo(p.x + Math.cos(mid) * 24, p.y + Math.sin(mid) * 24);
+    ctx.lineTo(p.x + Math.cos(mid) * st.radius, p.y + Math.sin(mid) * st.radius);
+    ctx.strokeStyle = hexA(color, 0.18 + k * 0.5); ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+  }
+  if (s.swinging) {
+    const swept = st.arc * Math.min(1, s.anim);
+    const cur = s.dir > 0 ? s.start + swept : s.start - swept;
+    const alpha = Math.max(0.18, 1 - Math.abs(s.anim - 0.55) * 0.9);
+    FX.arcBlade(ctx, p.x, p.y, st.radius, s.start, cur, color, alpha, 7, s.dir < 0);
+    if (st.echo) FX.arcBlade(ctx, p.x, p.y, st.radius - 9, s.start, cur, '#ff8de8', alpha * 0.42, 4, s.dir < 0);
+  }
+  for (const m of (s.marks || [])) FX.slashMark(ctx, m.x, m.y, m.angle, color, m.life / m.maxLife, 20);
+}
+
+function drawOrbitBladeAttack({ ctx, owner:p, weapon:w, spec:st, key, attack }) {
+  const rt = attackRuntime(w, key), color = attack?.color || w.def.color;
+  FX.glowRing(ctx, p.x, p.y, st.radius, color, 0.12, 1.2);
+  for (const q of (rt.points || [])) {
+    ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.a + Math.PI / 2);
+    ctx.beginPath(); ctx.moveTo(0, -st.bladeRadius); ctx.lineTo(st.bladeRadius * 0.55, 5); ctx.lineTo(0, st.bladeRadius * 0.5); ctx.lineTo(-st.bladeRadius * 0.55, 5); ctx.closePath();
+    ctx.fillStyle = hexA(color, 0.5); ctx.fill(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.4; ctx.stroke(); ctx.restore();
+    FX.glowCircle(ctx, q.x, q.y, st.bladeRadius * 1.4, color, 0.45);
+  }
+}
+
+function drawPhaseWaveAttack({ ctx, owner:p, weapon:w, spec:st, key, attack }) {
+  const rt = attackRuntime(w, key);
+  if (rt.flashT > 0) FX.glowRing(ctx, p.x, p.y, 28 + (0.14 - rt.flashT) * 120, attack?.color || w.def.color, rt.flashT / 0.14, 2);
+}
+
+function drawBladeCrownAttack({ ctx, owner:p, weapon:w, key, attack }) {
+  const rt = attackRuntime(w, key);
+  if (rt.flashT > 0) {
+    const k = rt.flashT / 0.28;
+    FX.glowRing(ctx, p.x, p.y, 42 + (1 - k) * 48, attack?.color || w.def.color, k, 5);
+  }
+}
+
+// ===== 武器特效绘制（攻击 handler 负责自己的视觉）=====
 function drawWeaponFx(game, ctx, w) {
-  const p = game.player, s = w.state;
+  const p = game.player;
   const attacks = p.attacks && p.attacks.length ? p.attacks : [{ formId: 'base', fire: activeWeaponStats(p, w) }];
   // 腐蚀流派：每段攻击各自的焰刃（带脉动）与雾域
   if (w.def.type === 'nova') {
@@ -476,26 +602,12 @@ function drawWeaponFx(game, ctx, w) {
       drawAttackHandler(mode, { game, ctx, weapon:w, owner:p, spec:st, attack:atk, key:`nova:${atk.formId}:${ai}` });
     }
   }
-  // 相位刃
-  if (w.def.type === 'sword' && s.phase === 'windup') {
-    const st = attacks[0].fire;
-    const k = 1 - s.windupT / s.windupMax;
-    const mid = s.start + s.dir * st.arc * 0.5;
-    FX.telegraphRing(ctx, p.x, p.y, 26 + k * 6, w.def.color, k, p.t, 8);
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    ctx.beginPath(); ctx.moveTo(p.x + Math.cos(mid) * 24, p.y + Math.sin(mid) * 24);
-    ctx.lineTo(p.x + Math.cos(mid) * st.radius, p.y + Math.sin(mid) * st.radius);
-    ctx.strokeStyle = hexA(w.def.color, 0.18 + k * 0.5); ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+  if (w.def.type === 'sword') {
+    for (let i = 0; i < attacks.length; i++) {
+      const attack = attacks[i], mode = attack.mode || attack.fire.mode || 'sword_slash';
+      drawAttackHandler(mode, { game, ctx, weapon:w, owner:p, spec:attack.fire, attack, key:`sword:${attack.formId}:${i}` });
+    }
   }
-  if (w.def.type === 'sword' && s.swinging) {
-    const st = attacks[0].fire;
-    const swept = st.arc * Math.min(1, s.anim);
-    const cur = s.dir > 0 ? s.start + swept : s.start - swept;
-    const alpha = Math.max(0.18, 1 - Math.abs(s.anim - 0.55) * 0.9);
-    FX.arcBlade(ctx, p.x, p.y, st.radius, s.start, cur, w.def.color, alpha, 7, s.dir < 0);
-    if (st.echo) FX.arcBlade(ctx, p.x, p.y, st.radius - 9, s.start, cur, '#ff8de8', alpha * 0.42, 4, s.dir < 0);
-  }
-  if (w.def.type === 'sword') for (const m of (s.marks || [])) FX.slashMark(ctx, m.x, m.y, m.angle, w.def.color, m.life / m.maxLife, 20);
 }
 
 const attackDamageMul = p => p?.dmgMul ?? 1;
@@ -572,9 +684,33 @@ registerAttackHandler('plague', {
   estimateDps: (st, p) => st.dps * ((st.bladeDmgMul || 1) * 2 + (st.mistDmgMul || 1)) * attackDamageMul(p) + fullCorrosionDps(st, p) + st.collapseDmg / st.collapseInterval * attackDamageMul(p),
 });
 registerAttackHandler('sword', {
-  required: ['damage', 'interval', 'arc', 'radius', 'sweepTime'],
+  required: [],
   update: ({ game, weapon, dt }) => swordTick(game, weapon, dt),
+  estimateDps: () => 0,
+});
+registerAttackHandler('sword_slash', {
+  required: ['damage', 'interval', 'arc', 'radius', 'sweepTime'],
+  update: updateSwordSlashAttack,
+  draw: drawSwordSlashAttack,
   estimateDps: (st, p) => st.damage / st.interval * attackDamageMul(p) * attackSpeedMul(p),
+});
+registerAttackHandler('orbit_blade', {
+  required: ['damage', 'tick', 'radius', 'bladeRadius', 'blades', 'spinSpeed'],
+  update: updateOrbitBladeAttack,
+  draw: drawOrbitBladeAttack,
+  estimateDps: (st, p) => st.damage * st.blades / st.tick * attackDamageMul(p),
+});
+registerAttackHandler('phase_wave', {
+  required: ['damage', 'interval', 'bulletSpeed', 'bulletR', 'pierce', 'range'],
+  update: updatePhaseWaveAttack,
+  draw: drawPhaseWaveAttack,
+  estimateDps: (st, p) => st.damage * (st.projectiles || 1) / st.interval * attackDamageMul(p) * attackSpeedMul(p),
+});
+registerAttackHandler('blade_crown', {
+  required: ['damage', 'interval', 'bulletSpeed', 'bulletR', 'projectiles', 'pierce', 'range'],
+  update: updateBladeCrownAttack,
+  draw: drawBladeCrownAttack,
+  estimateDps: (st, p) => st.damage * st.projectiles / st.interval * attackDamageMul(p) * attackSpeedMul(p),
 });
 registerAttackHandler('trail', {
   required: ['dps', 'segLife', 'width', 'dropInterval'],

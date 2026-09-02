@@ -172,6 +172,7 @@ class Player {
     const col = this.form ? this.form.color : '#4fd2ff';
     const visualId = this.treeId === 'cannon' ? this.formId
       : this.treeId === 'nova' ? (this.formId === 'base' ? 'nova' : this.formId)
+      : this.treeId === 'sword' ? (this.formId === 'base' ? 'sword' : this.formId)
       : (this.treeId || 'base');
     const blink = this.iframes > 0 && Math.floor(this.iframes * 16) % 2 === 0;
 

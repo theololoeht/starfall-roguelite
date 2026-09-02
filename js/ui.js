@@ -1,4 +1,31 @@
 // ===== UI：选武器 / HUD 同步 / 升级卡 / 结算 =====
+function swordPanelModel(p) {
+  const attacks = p.attacks || [];
+  const slash = attacks.find(a => a.mode === 'sword_slash');
+  const orbit = attacks.find(a => a.mode === 'orbit_blade');
+  const wave = attacks.find(a => a.mode === 'phase_wave');
+  const crown = attacks.find(a => a.mode === 'blade_crown');
+  const lines = [];
+  if (slash) {
+    const f = slash.fire;
+    lines.push(`弧斩 ${(f.damage * p.dmgMul).toFixed(1)} · ${Math.round(f.radius)}px · ${Math.round(f.arc / Math.PI * 180)}°`);
+  }
+  if (orbit) {
+    const f = orbit.fire;
+    lines.push(`环刃 ${f.blades}枚 · 轨道 ${Math.round(f.radius)}px · 转速 ${f.spinSpeed.toFixed(2)}`);
+  }
+  if (wave) {
+    const f = wave.fire;
+    lines.push(`猎杀波 ${f.projectiles || 1}道 · 锁敌 ${Math.round(f.range)}px · 贯穿 ${f.pierce}`);
+  }
+  if (crown) {
+    const f = crown.fire;
+    lines.push(`刃冠 ${f.projectiles}道 · 周期 ${(f.interval / p.atkSpdMul).toFixed(2)}s`);
+  }
+  lines.push(`总理论DPS ${p.dpsEstimate.toFixed(1)}`);
+  return { title:p.form?.name || '相位刃', lines };
+}
+
 const UI = {
   cache: {},
   selected: 'cannon',   // 初始武器选择
@@ -154,15 +181,12 @@ const UI = {
               `<div class="cap">${p.form?.name || '腐蚀'}面板</div>` + lines.join('<br>');
           }
         } else if (weaponType === 'sword') {
-          const hit = f.damage * p.dmgMul, dps = hit * rps;
-          const sig = ['sword', hit, f.radius, f.arc, interval].join(':');
+          const panel = swordPanelModel(p);
+          const sig = ['sword', panel.title, ...panel.lines].join(':');
           if (this.cache.dpsSig !== sig) {
             this.cache.dpsSig = sig;
             this.els.dps_panel.innerHTML =
-              `<div class="cap">相位刃面板</div>` +
-              `斩击 <b>${hit.toFixed(1)}</b> · 半径 ${Math.round(f.radius)}px<br>` +
-              `弧度 <b>${Math.round(f.arc / Math.PI * 180)}°</b> · 间隔 ${interval.toFixed(2)}s<br>` +
-              `理论DPS <span class="dps">${dps.toFixed(1)}</span>`;
+              `<div class="cap">${panel.title}面板</div>` + panel.lines.join('<br>');
           }
         } else {
         const heavyAvg = f.heavyEvery ? (1 + 1 / f.heavyEvery) : 1;

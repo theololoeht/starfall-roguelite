@@ -36,7 +36,16 @@ const result = vm.runInContext(`(() => {
     }
   }
 
-  return { valid, playable, experimental, deadEnds, legacyFusionRejected, playableUseTreeStats };
+  const paths = {
+    cannonShotgun: validateEvolutionPath(SKILL_TREES.cannon, ['base','shotgun','ultimate']),
+    cannonRail: validateEvolutionPath(SKILL_TREES.cannon, ['base','rail','ultimate']),
+    swordOrbit: validateEvolutionPath(SKILL_TREES.sword, ['base','orbit','ascendant']),
+    swordHunter: validateEvolutionPath(SKILL_TREES.sword, ['base','hunter','ascendant']),
+    novaFlame: validateEvolutionPath(SKILL_TREES.nova, ['base','flameblade','plague']),
+    novaMist: validateEvolutionPath(SKILL_TREES.nova, ['base','mist','plague']),
+  };
+
+  return { valid, playable, experimental, deadEnds, legacyFusionRejected, playableUseTreeStats, paths };
 })()`, context);
 
 assert(result.valid, '正式武器定义必须通过启动校验');
@@ -45,5 +54,7 @@ assert(result.playable.every(id => !result.experimental.includes(id)), '正式�
 assert.equal(result.experimental.sort().join(','), 'laser,ram,trail', '未完成武器应留在实验范围');
 assert(result.legacyFusionRejected, '已废止的旧融合武器不得再由运行时创建');
 assert(result.playableUseTreeStats, '正式武器的运行数值必须只读取技能树');
+assert.equal(result.deadEnds.length, 0, '正式技能树不得存在非终极断头形态');
+assert(Object.values(result.paths).every(Boolean), '每条正式分支必须可从 base 抵达最终形态');
 
 console.log('playable-weapons-smoke:', result);

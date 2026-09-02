@@ -22,7 +22,8 @@ const Sprites = {
     if (formId === 'shotgun') return [{ x: -7, y: 15, scale: 0.75 }, { x: 7, y: 15, scale: 0.75 }];
     if (formId === 'flameblade') return [{ x: -5, y: 18, scale: 0.78 }, { x: 5, y: 18, scale: 0.78 }];
     if (formId === 'mist') return [{ x: 0, y: 18, scale: 0.85 }];
-    if (formId === 'sword') return [{ x: -5, y: 16, scale: 0.72 }, { x: 5, y: 16, scale: 0.72 }];
+    if (['sword', 'orbit', 'hunter'].includes(formId)) return [{ x: -5, y: 16, scale: 0.72 }, { x: 5, y: 16, scale: 0.72 }];
+    if (formId === 'ascendant') return [{ x: -9, y: 17, scale: 0.68 }, { x: 0, y: 20, scale: 0.9 }, { x: 9, y: 17, scale: 0.68 }];
     return [{ x: 0, y: 17, scale: 1 }];
   },
 
@@ -106,18 +107,27 @@ const Sprites = {
       ctx.restore();
       return;
     }
-    if (formId === 'sword') {
+    if (['sword', 'orbit', 'hunter', 'ascendant'].includes(formId)) {
       // 相位刃：窄身高速机 + 两侧刀鞘，刀尖朝外避免与普通炮管混淆。
+      const ascendant = formId === 'ascendant', orbit = formId === 'orbit', hunter = formId === 'hunter';
       ctx.beginPath();
-      ctx.moveTo(0, -24); ctx.lineTo(6, -10); ctx.lineTo(10, 4); ctx.lineTo(20, 15);
-      ctx.lineTo(8, 12); ctx.lineTo(4, 17); ctx.lineTo(-4, 17); ctx.lineTo(-8, 12);
-      ctx.lineTo(-20, 15); ctx.lineTo(-10, 4); ctx.lineTo(-6, -10); ctx.closePath();
+      ctx.moveTo(0, ascendant ? -30 : hunter ? -28 : -24); ctx.lineTo(6, -10); ctx.lineTo(10, 4); ctx.lineTo(ascendant ? 25 : 20, 15);
+      ctx.lineTo(8, 12); ctx.lineTo(4, ascendant ? 20 : 17); ctx.lineTo(-4, ascendant ? 20 : 17); ctx.lineTo(-8, 12);
+      ctx.lineTo(ascendant ? -25 : -20, 15); ctx.lineTo(-10, 4); ctx.lineTo(-6, -10); ctx.closePath();
       ctx.fillStyle = dark; ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
       for (const side of [-1, 1]) {
         ctx.beginPath(); ctx.moveTo(side * 8, -6); ctx.lineTo(side * (19 + lv), 5); ctx.lineTo(side * 10, 8);
         ctx.strokeStyle = hexA(col, 0.85); ctx.lineWidth = 2.4; ctx.stroke();
         ctx.beginPath(); ctx.arc(side * 9, 7, 2, 0, TAU); ctx.fillStyle = '#ffffff'; ctx.fill();
+      }
+      if (orbit || ascendant) {
+        ctx.beginPath(); ctx.arc(0, 1, ascendant ? 11 : 8, 0, TAU);
+        ctx.strokeStyle = hexA('#65e7ff', 0.75); ctx.lineWidth = 1.7; ctx.stroke();
+      }
+      if (hunter || ascendant) {
+        ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(4, -11); ctx.lineTo(0, -5); ctx.lineTo(-4, -11); ctx.closePath();
+        ctx.fillStyle = hexA('#ff73d1', 0.8); ctx.fill();
       }
       ctx.restore();
       ctx.beginPath(); ctx.ellipse(0, -6, 2.6, 5.4, 0, 0, TAU);

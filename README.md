@@ -51,6 +51,7 @@ node tests/dragon-motion-smoke.mjs
 node tests/attack-framework-smoke.mjs
 node tests/systems-v23-smoke.mjs
 node tests/playable-weapons-smoke.mjs
+node tests/sword-progression-smoke.mjs
 ```
 
 ## 项目结构
@@ -74,7 +75,7 @@ style.css     页面与 UI 样式
 
 ## 后续计划
 
-1. 补齐正式技能树的分支完整性测试和未完成路线。
+1. 提取一局状态机，明确暂停、升级、Boss 演出和结算的计时边界。
 2. 拆分游戏循环、实体、成长、出怪和 Boss 职责。
 3. 增加中期 Boss、胜利结算与完整 6–8 分钟通关闭环。
 4. 补齐音效、设置、引导和浏览器端完整流程测试。
