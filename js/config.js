@@ -1,6 +1,7 @@
 // ===== 画布（横板）=====
 const CANVAS_W = 1080, CANVAS_H = 675;
 const WEAPON_SLOTS = 6;
+const BALANCE_REVISION = 'v34-feedback-1';
 
 // ===== 数值配置档 =====
 // 正式版默认使用 actual；测试版使用 ?balance=test；指定 Boss 场景额外加 &debug=boss。
@@ -8,25 +9,33 @@ const WEAPON_SLOTS = 6;
 const BALANCE_PROFILES = {
   actual: {
     id: 'actual', label: '正式数值',
-    combat: { playerHpMul: 1, playerDamageMul: 1, enemyHpMul: 1, enemyDamageMul: 1, xpMul: 1, scoreMul: 1 },
+    combat: {
+      playerHpMul: 1, playerDamageMul: 1, enemyHpMul: 1.35, enemyDamageMul: 1, xpMul: 1, scoreMul: 1,
+      bossHpMul: { prism: 1.6, dragon: 6 },
+    },
     pacing: {
       unlockScale: 1, waveLen: 30, spawnWindow: 20,
-      formationInterval: 40, firstFormationAt: 35, spawnTelegraph: 0.55,
-      enemySoftCap: 85, enemyHardCap: 150, bossSoftCap: 34, pressure: 0.5,
-      spawnBase: 1.5, spawnMin: 0.7, spawnAcceleration: 0.005,
-      emptyFieldAcceleration: 5, groupRampSeconds: 240, midBossAt: 90, bossAt: 180, massShare: 0.55, firstMassAt: 30, massInterval: 30,
+      formationInterval: 28, firstFormationAt: 24, spawnTelegraph: 0.55,
+      enemySoftCap: 95, enemyHardCap: 165, bossSoftCap: 34, pressure: 0.75,
+      spawnBase: 1.05, spawnMin: 0.38, spawnAcceleration: 0.004,
+      emptyFieldAcceleration: 5, groupBase: 2, groupMax: 4, groupRampSeconds: 150,
+      midBossAt: 90, bossAt: 180, massShare: 0.55, firstMassAt: 30, massInterval: 30,
     },
-    growth: { hpPerSecond: 0.005, hpPerWave: 0.02 },
+    growth: { hpPerSecond: 0.009, hpPerWave: 0.05 },
   },
   test: {
     id: 'test', label: '测试数值',
-    combat: { playerHpMul: 3, playerDamageMul: 2, enemyHpMul: 0.65, enemyDamageMul: 0.5, xpMul: 3, scoreMul: 1 },
+    combat: {
+      playerHpMul: 3, playerDamageMul: 2, enemyHpMul: 0.65, enemyDamageMul: 0.5, xpMul: 3, scoreMul: 1,
+      bossHpMul: { prism: 1, dragon: 1 },
+    },
     pacing: {
       unlockScale: 0.2, waveLen: 12, spawnWindow: 9,
       formationInterval: 12, firstFormationAt: 8, spawnTelegraph: 0.45,
       enemySoftCap: 60, enemyHardCap: 110, bossSoftCap: 26, pressure: 0.6,
       spawnBase: 0.9, spawnMin: 0.4, spawnAcceleration: 0.008,
-      emptyFieldAcceleration: 8, groupRampSeconds: 48, midBossAt: 18, bossAt: 36, massShare: 0.6, firstMassAt: 10, massInterval: 14,
+      emptyFieldAcceleration: 8, groupBase: 1, groupMax: 2, groupRampSeconds: 48,
+      midBossAt: 18, bossAt: 36, massShare: 0.6, firstMassAt: 10, massInterval: 14,
     },
     growth: { hpPerSecond: 0.005, hpPerWave: 0.02 },
   },
@@ -55,6 +64,7 @@ const PLAYER_BASE = {
   dmgMul: 1,
   atkSpdMul: 1,
   moveMul: 1,
+  autoAimTurnSpeed: 9,
 };
 
 // ===== 升级所需经验（升级更快）=====

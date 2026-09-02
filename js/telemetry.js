@@ -62,9 +62,10 @@ const RunMonitor = (() => {
     active = {
       schema:1, id:`${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, session,
       targetRuns, startedAt:new Date().toISOString(), endedAt:null, outcome:'running',
-      balance:BALANCE_MODE, weapon:game.initialWeapon, archetype:game.archetypeDef?.id || null,
+      balance:BALANCE_MODE, balanceRevision:typeof BALANCE_REVISION !== 'undefined' ? BALANCE_REVISION : null,
+      weapon:game.initialWeapon, archetype:game.archetypeDef?.id || null,
       gameTimeStart:game.time, duration:0, level:game.level, kills:0, score:0,
-      damageTaken:0, shieldBlocks:0, damageBySource:{}, bossEncounters:{},
+      damageTaken:0, shieldBlocks:0, damageBySource:{}, bossEncounters:{}, offscreenKills:0,
       peakEnemies:0, peakEnemyBullets:0, averageFps:0, minFps:null, lowFrameRatio:0,
       events:[], samples:[], finalPlayer:null, lastSampleAt:game.time,
     };
@@ -74,6 +75,7 @@ const RunMonitor = (() => {
 
   function event(type, data = {}, game = null) {
     if (!active) return;
+    if (type === 'enemy_defeated' && data.offscreen) active.offscreenKills++;
     active.events.push({ t:Number((game?.time ?? active.duration).toFixed(2)), type, ...data });
     if (active.events.length > 600) active.events.shift();
   }

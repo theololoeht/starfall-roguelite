@@ -13,6 +13,9 @@ class GameEncounterSystem {
           ? new DragonBoss(-90, this.H * 0.28, this.hpScale())
           : null;
       if (!boss) throw new Error(`Boss 缺少实体工厂: ${event.type}`);
+      const bossHpMul = BALANCE.combat.bossHpMul?.[event.type] || 1;
+      boss.maxHp *= bossHpMul;
+      boss.hp = boss.maxHp;
       this.enemies.push(boss);
       if (typeof RunMonitor !== 'undefined') RunMonitor.event('boss_spawned', { boss:event.type }, this);
       this.announce = { text: event.announce, t: 3.2 };
@@ -37,7 +40,8 @@ class GameEncounterSystem {
     this.burst(e.x, e.y, e.def.color, 8 + Math.floor(e.r / 3), e.r * 7);
     this.shake(e.r / 8);
     if (typeof RunMonitor !== 'undefined') {
-      RunMonitor.event('enemy_defeated', { enemy:e.type, boss:!!e.def?.boss }, this);
+      const offscreen = e.x < 0 || e.x > this.W || e.y < 0 || e.y > this.H;
+      RunMonitor.event('enemy_defeated', { enemy:e.type, boss:!!e.def?.boss, offscreen }, this);
       if (e.def?.boss) RunMonitor.bossDefeated(this, e);
     }
     if (e.def?.boss && BOSS_SCHEDULE.some(event => event.type === e.type && event.final)) {
@@ -71,6 +75,8 @@ class GameEncounterSystem {
       }
     }
     const n = e.def.xp > 2 ? 2 : 1;
-    for (let i = 0; i < n; i++) this.gems.push(new Gem(e.x + rand(-8, 8), e.y + rand(-8, 8), Math.ceil(e.def.xp / n)));
+    const dropX = clamp(e.x, 18, this.W - 18);
+    const dropY = clamp(e.y, 18, this.H - 18);
+    for (let i = 0; i < n; i++) this.gems.push(new Gem(dropX + rand(-8, 8), dropY + rand(-8, 8), Math.ceil(e.def.xp / n)));
   }
 }

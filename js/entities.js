@@ -19,6 +19,7 @@ class Player {
     this.attacks = [];           // 链上每段形态各自的攻击（前一级攻击方式保留）
     this.fire = null; this.form = null;
     this.aim = -Math.PI / 2;
+    this.autoAimTarget = null;
     this.swordCd = 0;   // 右键挥刀冷却
     this.muzzleFlashT = 0;
     // 护盾：一次性吸收，最多 3 层；持续不受击回充
@@ -72,8 +73,16 @@ class Player {
     this.muzzleFlashT = Math.max(0, this.muzzleFlashT - dt);
     // 双操作模式：鼠标=位置跟随+自动索敌；WASD=手动朝向（射击沿机头）
     if (input.mouseActive) {
-      const tgt = game.nearestEnemy(this.x, this.y, 900);
-      if (tgt) this.aim = angleTo(this.x, this.y, tgt.x, tgt.y);
+      let tgt = this.autoAimTarget;
+      if (!tgt || tgt.dead || tgt.spawning || dist2(this.x, this.y, tgt.x, tgt.y) > 960 * 960) {
+        tgt = game.nearestEnemy(this.x, this.y, 900);
+        this.autoAimTarget = tgt;
+      }
+      if (tgt) {
+        const desired = angleTo(this.x, this.y, tgt.x, tgt.y);
+        const maxTurn = this.autoAimTurnSpeed * dt;
+        this.aim += clamp(angDiff(desired, this.aim), -maxTurn, maxTurn);
+      }
     }
     if (this.dashT > 0) {
       // ── 冲撞：位移 + 炽热拖尾 + 撞击判定 ──
@@ -939,15 +948,19 @@ class Gem {
     this.t += dt;
     const p = game.player;
     const d = dist(this.x, this.y, p.x, p.y);
-    if (d < p.pickupRange) {
+    if (d < 16) {
+      this.dead = true;
+      game.gainXP(this.v);
+    } else if (d < p.pickupRange) {
       const sp = 320 + (p.pickupRange - d) * 4;
       this.x += (p.x - this.x) / d * sp * dt;
       this.y += (p.y - this.y) / d * sp * dt;
-      if (d < 16) { this.dead = true; game.gainXP(this.v); }
     } else {
       this.vx *= 0.92; this.vy *= 0.92;
       this.x += this.vx * dt; this.y += this.vy * dt;
     }
+    this.x = clamp(this.x, 10, CANVAS_W - 10);
+    this.y = clamp(this.y, 10, CANVAS_H - 10);
   }
   draw(ctx) {
     const s = this.v > 1 ? 6 : 4;

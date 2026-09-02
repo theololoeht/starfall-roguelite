@@ -29,6 +29,7 @@ const result = vm.runInContext(`(() => {
   const boss = { type:'prism', def:{boss:true}, phaseLabel:'棱镜封锁' };
   game.enemies = [boss]; game.eBullets = [{dead:false}, {dead:false}];
   RunMonitor.sample(game);
+  RunMonitor.event('enemy_defeated', { enemy:'mite', offscreen:true }, game);
   game.player.hp = 88;
   RunMonitor.damage(game, 12, {type:'prism_bullet'}, false);
   RunMonitor.damage(game, 0, {type:'prism_bullet'}, true);
@@ -43,12 +44,14 @@ const run = result[0];
 assert.equal(run.session, 'test-session');
 assert.equal(run.outcome, 'gameover');
 assert.equal(run.weapon, 'cannon');
+assert.equal(run.balanceRevision, 'v34-feedback-1');
 assert.equal(run.damageTaken, 12);
 assert.equal(run.shieldBlocks, 1);
 assert.equal(run.damageBySource.prism_bullet, 12);
 assert.equal(run.bossEncounters.prism.defeatedAt, 8.4);
 assert.equal(run.level, 3);
 assert.equal(run.peakEnemyBullets, 2);
+assert.equal(run.offscreenKills, 1);
 assert(run.events.some(event => event.type === 'boss_defeated'));
 assert(run.events.some(event => event.type === 'state' && event.to === 'gameover'));
 

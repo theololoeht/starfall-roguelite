@@ -59,7 +59,10 @@ class GameSpawningSystem {
     const totalW = eligible.reduce((a, r) => a + r.weight, 0);
     let roll = Math.random() * totalW, type = eligible[0].type;
     for (const r of eligible) { roll -= r.weight; if (roll <= 0) { type = r.type; break; } }
-    const n = 1 + (Math.random() < Math.min(0.3, this.time / BALANCE.pacing.groupRampSeconds) ? 1 : 0);
+    const ramp = clamp(this.time / BALANCE.pacing.groupRampSeconds, 0, 1);
+    const groupBase = BALANCE.pacing.groupBase || 1;
+    const groupMax = Math.max(groupBase, BALANCE.pacing.groupMax || groupBase + 1);
+    const n = clamp(groupBase + Math.floor(ramp * (groupMax - groupBase + 1)), groupBase, groupMax);
     const groupId = `natural:${this.wave}:${this.spawnGroupSeq++}`;
     for (let i = 0; i < n; i++) this.queueSpawn(type, pick8Angle(), 0, SPAWN_TELEGRAPH, { source:'natural', groupId });
   }

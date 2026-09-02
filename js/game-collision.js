@@ -114,6 +114,7 @@ class GameCollisionSystem {
     let best = null, bd = range * range;
     for (const e of this.enemies) {
       if (e.dead || e.spawning || e === exclude) continue;
+      if (!e.def?.boss && (e.x < -12 || e.x > this.W + 12 || e.y < -12 || e.y > this.H + 12)) continue;
       const d = dist2(x, y, e.x, e.y);
       if (d < bd) { bd = d; best = e; }
     }
