@@ -227,7 +227,11 @@ js/config.js              配置表：敌机图鉴、正式/实验武器、技�
 js/run-state.js           一局状态、合法迁移与迁移审计
 js/weapons.js             武器行为分发（gun/laser/ram/nova/sword/trail）
 js/entities.js            Player（武器外观联动）/ Enemy 状态机 / 弹体 / 尾迹
-js/game.js                主循环：自然刷怪+编队、碰撞、发光渲染管线、卡片生成
+js/game.js                一局生命周期、每帧调度、通用特效与绘制
+js/game-spawning.js       生成预算、自然刷怪、大批量方案与编队
+js/game-collision.js      弹体、敌人、玩家碰撞与目标查询
+js/game-encounter.js      Boss 调度、死亡副作用与胜利结算
+js/game-progression.js    经验、属性卡、技能树和成长倍率
 js/ui.js / js/main.js     UI 与输入
 ```
 
@@ -235,5 +239,6 @@ js/ui.js / js/main.js     UI 与输入
 
 - 当前：特效管线、11 种普通敌人、10 种阵型、3 种正式初始武器、双档数值和星蚀龙 Boss。
 - 已完成：三种正式初始武器的完整进化路径、一局状态机、最终胜利结算与 localhost 自动试玩。
-- 下一阶段：拆分成长/碰撞/生成/Boss 职责并增加中期 Boss。
+- 已完成：成长/碰撞/生成/Boss 职责拆分，主类只保留生命周期、调度与绘制。
+- 下一阶段：增加中期 Boss，并继续分离技能树绘制与通用特效职责。
 - 后续：音效、粒子对象池、引导、完整流程测试与静态部署。

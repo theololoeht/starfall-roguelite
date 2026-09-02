@@ -55,6 +55,7 @@ node tests/systems-v23-smoke.mjs
 node tests/playable-weapons-smoke.mjs
 node tests/sword-progression-smoke.mjs
 node tests/run-state-smoke.mjs
+node tests/game-systems-smoke.mjs
 ```
 
 ## 项目结构
@@ -62,7 +63,7 @@ node tests/run-state-smoke.mjs
 ```text
 assets/       游戏位图与龙精灵图资源
 dev/          美术预览、调试页面与验证截图
-js/           游戏循环、实体、攻击、出怪、UI 和特效
+js/           游戏循环、实体、攻击、出怪、成长、碰撞、遭遇、UI 和特效
 tests/        数值、攻击、Boss 与美术契约测试
 index.html    游戏入口
 style.css     页面与 UI 样式
