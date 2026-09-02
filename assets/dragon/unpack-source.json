@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "kind": "sprite-gen-unpack-source",
+  "layout_source": "imported-pngs",
+  "cell": {
+    "width": 512,
+    "height": 512
+  },
+  "source_dir": "E:\\agent\\topdown-neon-dragon\\assets\\generated\\atlas-input-v2",
+  "files": [
+    "neon-dragon-body-boss.png",
+    "neon-dragon-body-diamond.png",
+    "neon-dragon-body-ring.png",
+    "neon-dragon-body-star.png",
+    "neon-dragon-head-bite-open.png",
+    "neon-dragon-head-bite-windup.png",
+    "neon-dragon-head-blink.png",
+    "neon-dragon-head-neutral.png",
+    "neon-dragon-neck-chevron.png",
+    "neon-dragon-neck-collar.png",
+    "neon-dragon-neck-narrow.png",
+    "neon-dragon-neck-shoulder.png",
+    "neon-dragon-tail-blade-v2.png",
+    "neon-dragon-wing-left-folded.png",
+    "neon-dragon-wing-left-open.png",
+    "neon-dragon-wing-right-folded.png",
+    "neon-dragon-wing-right-open.png"
+  ],
+  "labels": [
+    "neon-dragon-body-boss",
+    "neon-dragon-body-diamond",
+    "neon-dragon-body-ring",
+    "neon-dragon-body-star",
+    "neon-dragon-head-bite-open",
+    "neon-dragon-head-bite-windup",
+    "neon-dragon-head-blink",
+    "neon-dragon-head-neutral",
+    "neon-dragon-neck-chevron",
+    "neon-dragon-neck-collar",
+    "neon-dragon-neck-narrow",
+    "neon-dragon-neck-shoulder",
+    "neon-dragon-tail-blade-v2",
+    "neon-dragon-wing-left-folded",
+    "neon-dragon-wing-left-open",
+    "neon-dragon-wing-right-folded",
+    "neon-dragon-wing-right-open"
+  ],
+  "groups": [
+    "modules"
+  ],
+  "base_source": null,
+  "imported_refs": {}
+}

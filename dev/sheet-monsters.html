@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>精灵图 · 怪物图鉴</title>
+<style>
+  body{background:#04060e;color:#cfe3ff;font-family:"Microsoft YaHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:16px}
+  h1{font-size:18px;letter-spacing:6px;color:#ff5d7e}
+  p{color:#5f7ea6;font-size:12px}
+  canvas{background:radial-gradient(ellipse at 50% 30%,#0a1226,#04060e);border:1px solid #3a1420}
+  a{color:#4fd2ff;font-size:12px}
+</style>
+</head>
+<body>
+<h1>精灵图 III · 怪物图鉴（红色阵营）</h1>
+<p>按出场顺序排列 · <a href="sheet-ship.html">飞机图</a> · <a href="sheet-bullets.html">子弹图</a> · <a href="sheet.html">总表</a></p>
+<canvas id="sheet" width="1200" height="460"></canvas>
+<script src="../js/utils.js"></script>
+<script src="../js/fx.js"></script>
+<script src="../js/sprites.js"></script>
+<script>
+const cv = document.getElementById('sheet');
+const ctx = cv.getContext('2d');
+ctx.fillStyle = '#0a0508'; ctx.fillRect(0, 0, cv.width, cv.height);
+const S = 2.4; const T = 1.2;
+function mon(x, name, at, behavior, col, drawFn, scale = S) {
+  ctx.save(); ctx.translate(x, 170); ctx.scale(scale, scale); ctx.rotate(Math.PI); drawFn(ctx); ctx.restore();
+  ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = col; ctx.fillText(name, x, 250);
+  ctx.font = '10px sans-serif'; ctx.fillStyle = '#8d6a75';
+  ctx.fillText(at, x, 266); ctx.fillStyle = '#6a4d58'; ctx.fillText(behavior, x, 280);
+}
+mon(110, '陨石', '开局', '缓慢漂移·分裂×2', '#b06a52', (c) => Sprites.enemy(c, 'rock', 20, '#b06a52', T, { crag: [1, 0.8, 1.12, 0.88, 1.05, 0.82, 1.1, 0.9] }));
+mon(250, '蜂群', '开局', '直线扑击·成群', '#ff2e4d', (c) => Sprites.enemy(c, 'mite', 12, '#ff2e4d', T));
+mon(390, '掠袭者', '30s', '蓄力→突刺', '#ff5d3d', (c) => Sprites.enemy(c, 'dasher', 13, '#ff5d3d', T));
+mon(530, '炮手', '45s', '单发', '#ff8c42', (c) => Sprites.enemy(c, 'gunner', 15, '#ff8c42', T));
+mon(670, '连射兵', '80s', '串射×3', '#ff5577', (c) => Sprites.enemy(c, 'burst', 15, '#ff5577', T));
+mon(810, '散射兵', '115s', '扇形×5', '#ff3366', (c) => Sprites.enemy(c, 'scatter', 16, '#ff3366', T));
+mon(950, '堡垒', '145s', '死亡弹幕', '#ff3d3d', (c) => Sprites.enemy(c, 'bastion', 26, '#ff3d3d', T));
+mon(1090, '陨石碎块', '分裂产物', '快速漂移', '#c07a5e', (c) => Sprites.enemy(c, 'rock_s', 11, '#c07a5e', T, { crag: [1, 0.85, 0.9, 1.1, 0.85, 1.05] }));
+mon(230, 340, '自爆虫', '60s', '冲撞·殉爆 80px', '#ff4d2e', (c) => Sprites.enemy(c, 'bomber', 12, '#ff4d2e', T));
+mon(410, 340, '狙击塔', '95s', '瞄准线→高速弹', '#d43d3d', (c) => Sprites.enemy(c, 'sniper', 13, '#d43d3d', T, { locking: true }));
+mon(590, 340, '布雷者', '130s', '投掷感应地雷', '#ff7d5a', (c) => Sprites.enemy(c, 'miner', 15, '#ff7d5a', T));
+mon(770, 340, '蜂巢母体', '165s', '周期孵化蜂群', '#ff6b81', (c) => Sprites.enemy(c, 'hive', 30, '#ff6b81', T));
+</script>
+</body>
+</html>

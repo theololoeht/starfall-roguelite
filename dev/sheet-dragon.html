@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>BOSS 设计稿 · 龙</title>
+<style>
+  body{background:#04060e;color:#cfe3ff;font-family:"Microsoft YaHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:12px}
+  h1{font-size:18px;letter-spacing:6px;color:#ff3d3d}
+  p{color:#5f7ea6;font-size:12px;margin:4px}
+  canvas{background:radial-gradient(ellipse at 50% 30%,#0a1226,#04060e);border:1px solid #3a1420}
+</style>
+</head>
+<body>
+<h1>BOSS 设计稿 · 多边形巨龙</h1>
+<p>方案 A：节段巨龙（头 + 跟随节段 + 龙翼 + 尾刺）· 方案 B：翼龙型（紧凑双翼）· 下方为部件分解</p>
+<canvas id="sheet" width="1240" height="900"></canvas>
+<script>
+const cv = document.getElementById('sheet');
+const ctx = cv.getContext('2d');
+const TAU = Math.PI * 2;
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+// ── 龙头（朝下，原点在头中心）──
+function dragonHead(c, s, t, col = '#ff3d3d') {
+  c.save(); c.scale(s, s);
+  // 双角（后掠）
+  c.beginPath();
+  c.moveTo(9, -10); c.lineTo(26, -30); c.lineTo(30, -38); c.lineTo(16, -26); c.lineTo(4, -16);
+  c.moveTo(-9, -10); c.lineTo(-26, -30); c.lineTo(-30, -38); c.lineTo(-16, -26); c.lineTo(-4, -16);
+  c.closePath();
+  c.fillStyle = '#1c0d12'; c.fill();
+  c.strokeStyle = hexA(col, 0.9); c.lineWidth = 2 / s; c.stroke();
+  // 头盔/头骨
+  c.beginPath();
+  c.moveTo(0, 34);          // 鼻尖
+  c.lineTo(12, 26);         // 右颌
+  c.lineTo(16, 10);
+  c.lineTo(13, -12);
+  c.lineTo(0, -16);
+  c.lineTo(-13, -12);
+  c.lineTo(-16, 10);
+  c.lineTo(-12, 26);
+  c.closePath();
+  c.fillStyle = '#1c0d12'; c.fill();
+  c.strokeStyle = col; c.lineWidth = 2.2 / s; c.stroke();
+  // 颌缝 + 牙
+  c.beginPath(); c.moveTo(0, 34); c.lineTo(0, 16);
+  c.strokeStyle = hexA(col, 0.5); c.lineWidth = 1.2 / s; c.stroke();
+  c.fillStyle = '#ffd9d9';
+  for (const tx of [-7, -3.5, 3.5, 7]) {
+    c.beginPath(); c.moveTo(tx, 22); c.lineTo(tx + 1.6, 27); c.lineTo(tx - 1.6, 27); c.closePath(); c.fill();
+  }
+  // 双眼（发光）
+  c.save(); c.globalCompositeOperation = 'lighter';
+  for (const ex of [-8, 8]) {
+    c.beginPath(); c.arc(ex, 8, 3 + Math.sin(t * 5) * 0.6, 0, TAU);
+    c.fillStyle = hexA('#ffd25d', 0.95); c.fill();
+  }
+  c.restore();
+  // 头冠棘
+  for (const hx of [-6, 0, 6]) {
+    c.beginPath(); c.moveTo(hx - 2, -12); c.lineTo(hx, -20); c.lineTo(hx + 2, -12); c.closePath();
+    c.fillStyle = hexA(col, 0.85); c.fill();
+  }
+  c.restore();
+}
+
+// ── 体节（六边甲板 + 背棘）──
+function dragonSegment(c, s, r, t, col = '#ff3d3d', first = false) {
+  c.save(); c.scale(s, s);
+  c.rotate(Math.sin(t * 2) * 0.08);
+  // 六边甲板
+  c.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = i / 6 * TAU;
+    const px = Math.cos(a) * r * 0.9, py = Math.sin(a) * r * 0.9;
+    i === 0 ? c.moveTo(px, py) : c.lineTo(px, py);
+  }
+  c.closePath();
+  c.fillStyle = '#1c0d12'; c.fill();
+  c.strokeStyle = col; c.lineWidth = 2 / s; c.stroke();
+  // 内环
+  c.beginPath(); c.arc(0, 0, r * 0.42, 0, TAU);
+  c.strokeStyle = hexA(col, 0.55); c.lineWidth = 1.2 / s; c.stroke();
+  // 核心
+  c.beginPath(); c.arc(0, 0, r * 0.16, 0, TAU);
+  c.fillStyle = '#ffd25d'; c.fill();
+  // 背棘（上缘）
+  if (first || r > 16) {
+    c.beginPath(); c.moveTo(-r * 0.4, -r * 0.75); c.lineTo(0, -r * 1.35); c.lineTo(r * 0.4, -r * 0.75);
+    c.closePath();
+    c.fillStyle = hexA(col, 0.85); c.fill();
+  }
+  c.restore();
+}
+
+// ── 龙翼（多边形膜翼 + 骨线）──
+function dragonWing(c, s, dir, t, col = '#ff3d3d') {
+  c.save(); c.scale(s * dir, s);
+  const flap = Math.sin(t * 2.4) * 0.35;
+  c.rotate(flap * 0.4);
+  // 膜翼
+  c.beginPath();
+  c.moveTo(0, 0);
+  c.lineTo(46, -34);
+  c.lineTo(64, -10);
+  c.lineTo(40, 6);
+  c.lineTo(52, 20);
+  c.lineTo(18, 18);
+  c.closePath();
+  c.fillStyle = hexA(col, 0.16); c.fill();
+  c.strokeStyle = col; c.lineWidth = 1.8 / s; c.stroke();
+  // 骨线
+  for (const [tx, ty] of [[46, -34], [64, -10], [40, 6], [52, 20]]) {
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(tx, ty);
+    c.strokeStyle = hexA(col, 0.55); c.lineWidth = 1.2 / s; c.stroke();
+  }
+  c.restore();
+}
+
+// ── 尾刺 ──
+function dragonTail(c, s, t, col = '#ff3d3d') {
+  c.save(); c.scale(s, s);
+  c.beginPath();
+  c.moveTo(-8, -12); c.lineTo(0, -34); c.lineTo(8, -12); c.lineTo(0, 10);
+  c.closePath();
+  c.fillStyle = '#1c0d12'; c.fill();
+  c.strokeStyle = col; c.lineWidth = 2 / s; c.stroke();
+  c.beginPath(); c.moveTo(0, -34); c.lineTo(0, 6);
+  c.strokeStyle = hexA(col, 0.5); c.lineWidth = 1.2 / s; c.stroke();
+  c.restore();
+}
+
+// ── 组装：方案 A 节段巨龙（轨迹跟随链：头领路，体节沿轨迹等距跟随，丝滑连贯）──
+let dragonTrail = [];
+function serpentDragon(c, x, y, s, t) {
+  const hx = x + Math.sin(t * 0.6) * 120 * s;
+  const hy = y - 50 * s + Math.sin(t * 1.05) * 62 * s;
+  dragonTrail.unshift([hx, hy]);
+  if (dragonTrail.length > 320) dragonTrail.shift();
+  const spacing = 34 * s, segs = 8;
+  // 沿头部轨迹按弧长等距采样体节位置
+  const pts = [[hx, hy]];
+  let acc = 0, target = spacing;
+  for (let i = 1; i < dragonTrail.length && pts.length <= segs; i++) {
+    const [ax, ay] = dragonTrail[i - 1], [bx, by] = dragonTrail[i];
+    const segLen = Math.hypot(bx - ax, by - ay);
+    if (segLen < 0.001) continue;
+    while (acc + segLen >= target && pts.length <= segs) {
+      const k = (target - acc) / segLen;
+      pts.push([ax + (bx - ax) * k, ay + (by - ay) * k]);
+      target += spacing;
+    }
+    acc += segLen;
+  }
+  const angleAt = (i) => (i + 1 < pts.length) ? Math.atan2(pts[i + 1][1] - pts[i][1], pts[i + 1][0] - pts[i][0]) : 0;
+  // 脊椎光带：两遍描线（红边 + 暗芯），宽度渐细，填满节段间隙
+  c.save();
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 1; i < pts.length; i++) {
+      const w = Math.max(9, (44 - i * 3.6) * s) - pass * 3.2;
+      c.strokeStyle = pass === 0 ? hexA('#ff3d3d', 0.9) : '#1c0d12';
+      c.lineWidth = Math.max(6, w);
+      c.beginPath(); c.moveTo(pts[i - 1][0], pts[i - 1][1]); c.lineTo(pts[i][0], pts[i][1]); c.stroke();
+    }
+  }
+  c.restore();
+  // 翼（挂在第 2 节两侧，顺局部方向）
+  if (pts.length > 3) {
+    const wa = angleAt(2);
+    c.save(); c.translate(pts[2][0], pts[2][1]); c.rotate(wa + Math.PI / 2);
+    dragonWing(c, s, -1, t + 1); dragonWing(c, s, 1, t);
+    c.restore();
+  }
+  // 尾刺（最末采样点，顺方向）
+  if (pts.length > 2) {
+    const tp = pts[pts.length - 1], ta = angleAt(pts.length - 2);
+    c.save(); c.translate(tp[0], tp[1]); c.rotate(ta + Math.PI);
+    dragonTail(c, s, t);
+    c.restore();
+  }
+  // 体节（从尾到头，甲板背棘顺路径反向；轨迹未长满时按实际点数收窄）
+  const bodySegs = Math.min(segs, pts.length - 1);
+  for (let i = bodySegs; i >= 1; i--) {
+    const r = 26 - i * 1.8;
+    const ta = angleAt(i);
+    c.save(); c.translate(pts[i][0], pts[i][1]);
+    c.rotate(ta + Math.PI / 2);
+    dragonSegment(c, s, r, t - i * 0.4, '#ff3d3d', i === 1);
+    c.restore();
+  }
+  // 头（朝移动方向）
+  c.save(); c.translate(hx, hy);
+  if (pts.length > 1) c.rotate(Math.atan2(pts[0][1] - pts[1][1], pts[0][0] - pts[1][0]) + Math.PI / 2);
+  dragonHead(c, s, t);
+  c.restore();
+}
+
+// ── 组装：方案 B 翼龙型（紧凑）──
+function wyvernDragon(c, x, y, s, t) {
+  const hx = x, hy = y + Math.sin(t * 0.7) * 10 * s;
+  c.save(); c.translate(hx, hy);
+  // 大翼
+  dragonWing(c, s * 1.2, -1, t); dragonWing(c, s * 1.2, 1, t);
+  // 短节段 ×3
+  for (let i = 2; i >= 0; i--) {
+    c.save(); c.translate(0, -i * 30 * s);
+    dragonSegment(c, s, 22 - i * 3, t - i * 0.5, '#ff3d3d', i === 0);
+    c.restore();
+  }
+  dragonHead(c, s, t);
+  c.restore();
+}
+
+// ── 渲染循环 ──
+let t0 = performance.now();
+function frame(now) {
+  const t = (now - t0) / 1000;
+  ctx.fillStyle = '#060a16'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.strokeStyle = 'rgba(58,20,32,.35)';
+  for (let x = 0; x < cv.width; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, cv.height); ctx.stroke(); }
+  for (let y = 0; y < cv.height; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cv.width, y); ctx.stroke(); }
+
+  // 方案 A
+  ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#ff5d7e';
+  ctx.fillText('方案 A · 节段巨龙（头+8节段+翼+尾刺，全身上下摆动游走）', 330, 130);
+  serpentDragon(ctx, 330, 560, 1.15, t);
+
+  // 方案 B
+  ctx.fillStyle = '#ff8c42';
+  ctx.fillText('方案 B · 翼龙型（紧凑双翼 + 3 节段）', 950, 130);
+  wyvernDragon(ctx, 950, 420, 1.35, t);
+
+  // 部件分解
+  ctx.fillStyle = '#7d94bb';
+  ctx.fillText('部 件 分 解', 620, 660);
+  const parts = [
+    ['龙头', (c, s) => dragonHead(c, s, t)],
+    ['体节', (c, s) => dragonSegment(c, s, 20, t, '#ff3d3d', true)],
+    ['龙翼', (c, s) => dragonWing(c, s, 1, t)],
+    ['尾刺', (c, s) => dragonTail(c, s, t)],
+  ];
+  parts.forEach(([name, fn], i) => {
+    const x = 180 + i * 300;
+    ctx.save(); ctx.translate(x, 760); ctx.scale(2.6, 2.6); fn(ctx, 1); ctx.restore();
+    ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#cfe3ff';
+    ctx.fillText(name, x, 840);
+  });
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

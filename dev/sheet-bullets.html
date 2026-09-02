@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>精灵图 · 子弹与特效</title>
+<style>
+  body{background:#04060e;color:#cfe3ff;font-family:"Microsoft YaHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:16px}
+  h1{font-size:18px;letter-spacing:6px;color:#4fd2ff}
+  h2{font-size:14px;color:#9db6dd;letter-spacing:2px;margin-top:6px}
+  p{color:#5f7ea6;font-size:12px}
+  canvas{background:radial-gradient(ellipse at 50% 30%,#0a1226,#04060e);border:1px solid #1c2742}
+  a{color:#4fd2ff;font-size:12px}
+</style>
+</head>
+<body>
+<h1>精灵图 II · 子弹与特效</h1>
+<p>每形态基准弹 → 状态变体 → 敌方弹幕 · <a href="sheet-ship.html">飞机图</a> · <a href="sheet-monsters.html">怪物图</a> · <a href="sheet.html">总表</a></p>
+<canvas id="sheet" width="1280" height="900"></canvas>
+<script src="../js/utils.js?v=15"></script>
+<script src="../js/fx.js?v=15"></script>
+<script src="../js/sprites.js?v=15"></script>
+<script>
+const cv = document.getElementById('sheet');
+const ctx = cv.getContext('2d');
+ctx.fillStyle = '#060a16'; ctx.fillRect(0, 0, cv.width, cv.height);
+const S = 2.4;
+function item(x, y, name, sub, col, drawFn, scale = S) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale); drawFn(ctx); ctx.restore();
+  ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = col; ctx.fillText(name, x, y + 42);
+  ctx.font = '10px sans-serif'; ctx.fillStyle = '#7d94bb'; ctx.fillText(sub, x, y + 56);
+}
+const T = 1.2;
+// 第一横排：四形态基准弹
+item(120, 110, '彗星弹', '脉冲机炮', '#4fd2ff', (c) => { c.rotate(-Math.PI / 2); Sprites.bullet(c, 'comet', 4.5, '#4fd2ff', 0, T); });
+item(300, 110, '碎片弹', '散裂弹幕', '#ff5de3', (c) => { c.rotate(-Math.PI / 2); Sprites.bullet(c, 'shard', 5, '#ff5de3', 0, T); });
+item(480, 110, '长矛弹', '贯穿磁轨', '#ffd25d', (c) => { c.rotate(-Math.PI / 2); Sprites.bullet(c, 'lance', 6, '#ffd25d', 0, T); });
+item(660, 110, '棱光弹', '湮灭星舰', '#e8f4ff', (c) => { c.rotate(-Math.PI / 2); Sprites.bullet(c, 'nova', 6, '#e8f4ff', 0, T); });
+// 第二横排：状态变体
+item(120, 290, '尖头重弹', '每第3发 ×2 击退', '#7db8ff', (c) => { c.rotate(-Math.PI / 2); Sprites.bullet(c, 'dart', 7, '#7db8ff', 0, T); });
+item(300, 290, '爆裂弹', '每第4发 70px爆炸', '#ff9d3d', (c) => Sprites.bullet(c, 'explosive', 5, '#ff9d3d', 0, T));
+item(480, 290, '追踪碎片', '命中碎裂 追踪', '#5dffd2', (c) => Sprites.bullet(c, 'frag', 3.5, '#5dffd2', 0, T));
+// 第三横排：敌方弹幕
+item(120, 470, '单发弹', '炮手 45s', '#ff8c42', (c) => Sprites.enemyBullet(c, 5, '#ff8c42', T), 2.8);
+item(300, 470, '串射弹×3', '连射兵 80s', '#ff5577', (c) => { for (let k = 0; k < 3; k++) { c.save(); c.translate(0, 20 - k * 22); Sprites.enemyBullet(c, 5, '#ff5577', T); c.restore(); } }, 2.8);
+item(480, 470, '散射弹×5', '散射兵 115s', '#ff3366', (c) => { for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + (i - 2) * 0.5; c.save(); c.translate(Math.cos(a) * 30, Math.sin(a) * 30); Sprites.enemyBullet(c, 5, '#ff3366', T); c.restore(); } }, 2.8);
+item(660, 470, '死亡弹幕×10', '堡垒死亡', '#ff3d3d', (c) => { for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; c.save(); c.translate(Math.cos(a) * 38, Math.sin(a) * 38); Sprites.enemyBullet(c, 4.5, '#ff3d3d', T); c.restore(); } }, 2.8);
+// 第四横排：命中特效
+item(120, 650, '冲击环', '击杀/爆炸', '#ff5d7e', (c) => { c.save(); c.globalCompositeOperation = 'lighter'; FX.glowRing(c, 0, 0, 24, '#ff5d7e', 0.9, 4); FX.glowRing(c, 0, 0, 14, '#ffffff', 0.7, 2); c.restore(); }, 2.4);
+item(300, 650, '爆闪', '击杀核心', '#ff5d7e', (c) => { c.save(); c.globalCompositeOperation = 'lighter'; FX.glowCircle(c, 0, 0, 30, '#ff5d7e', 1); c.restore(); }, 2.4);
+item(480, 650, '链式闪电', '湮灭磁轨', '#7db8ff', (c) => { c.save(); c.globalCompositeOperation = 'lighter'; c.beginPath(); c.moveTo(-45, 0); for (let k = 1; k < 5; k++) c.lineTo(-45 + k * 22, Math.sin(k * 2.1) * 11); c.lineTo(48, 0); c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke(); c.strokeStyle = 'rgba(125,184,255,.6)'; c.lineWidth = 5; c.stroke(); c.restore(); }, 2.4);
+item(660, 650, 'EMP 环', '电磁脉冲清弹', '#ffe25d', (c) => { c.save(); c.globalCompositeOperation = 'lighter'; FX.glowRing(c, 0, 0, 26, '#ffe25d', 0.9, 4); FX.glowRing(c, 0, 0, 16, '#ffffff', 0.6, 2); c.restore(); }, 2.4);
+item(840, 650, '尾迹缎带', '矢量尾焰', '#5dffd2', (c) => { c.save(); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round'; const pts = [[-42, 8], [-21, 3], [0, 7], [21, 2], [42, 5]]; for (let i = 1; i < pts.length; i++) { const [x1, y1] = pts[i - 1], [x2, y2] = pts[i]; const al = i / pts.length; c.strokeStyle = `rgba(93,255,210,${0.28 * al})`; c.lineWidth = 20 * (0.4 + 0.6 * al); c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.strokeStyle = `rgba(255,255,255,${0.12 * al})`; c.lineWidth = 7 * (0.4 + 0.6 * al); c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); } c.restore(); }, 2.4);
+// 行标签
+ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = '#4fd2ff';
+ctx.fillText('// 各形态基准子弹', 40, 40);
+ctx.fillText('// 状态变体（覆盖基准外观）', 40, 220);
+ctx.fillText('// 敌方弹幕（红色阵营）', 40, 400);
+ctx.fillText('// 命中与爆炸特效', 40, 580);
+</script>
+</body>
+</html>

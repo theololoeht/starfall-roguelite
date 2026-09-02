@@ -1,0 +1,28 @@
+# OS and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and generated caches
+node_modules/
+.cache/
+coverage/
+dist/
+build/
+*.log
+
+# Local server/runtime residue
+*.pid
+*.tmp
+*.bak
+__pycache__/
+

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>精灵图 · 飞机进化</title>
+<style>
+  body{background:#04060e;color:#cfe3ff;font-family:"Microsoft YaHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:16px}
+  h1{font-size:18px;letter-spacing:6px;color:#4fd2ff}
+  p{color:#5f7ea6;font-size:12px}
+  canvas{background:radial-gradient(ellipse at 50% 30%,#0a1226,#04060e);border:1px solid #1c2742}
+  a{color:#4fd2ff;font-size:12px}
+</style>
+</head>
+<body>
+<h1>精灵图 I · 玩家战机与代表流派</h1>
+<p>机炮四形态 + DOT 四形态及各自攻击轨迹 · <a href="sheet-bullets.html">子弹图</a> · <a href="sheet-monsters.html">怪物图</a> · <a href="sheet.html">总表</a></p>
+<canvas id="sheet" width="1360" height="760"></canvas>
+<script src="../js/utils.js?v=20"></script>
+<script src="../js/fx.js?v=20"></script>
+<script src="../js/sprites.js?v=20"></script>
+<script>
+const cv = document.getElementById('sheet');
+const ctx = cv.getContext('2d');
+ctx.fillStyle = '#060a16'; ctx.fillRect(0, 0, cv.width, cv.height);
+ctx.strokeStyle = 'rgba(28,39,64,.4)';
+for (let x = 0; x < cv.width; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, cv.height); ctx.stroke(); }
+for (let y = 0; y < cv.height; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cv.width, y); ctx.stroke(); }
+
+const S = 2.6;   // 大尺寸基准
+function stage(x, y, name, sub, col, drawFn) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(S, S);
+  drawFn(ctx);
+  ctx.restore();
+  ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = col;
+  ctx.fillText(name, x, y + 66);
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = '#7d94bb';
+  ctx.fillText(sub, x, y + 84);
+}
+function arrow(x1, y1, x2, y2, col = 'rgba(79,210,255,.5)') {
+  ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([7, 5]);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.setLineDash([]);
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  ctx.translate(x2, y2); ctx.rotate(a);
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-4, 4.5); ctx.lineTo(-4, -4.5); ctx.closePath(); ctx.fill();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+function ship(c, formId, lv, col, projectileCount) {
+  for (const [i, ex] of Sprites.playerExhausts(formId).entries()) {
+    FX.energyPlume(c, ex.x, ex.y, 15 * ex.scale, 6 * ex.scale, col, 1.2, i * 2.1);
+  }
+  Sprites.player(c, formId, lv, col, 1.2);
+  if (projectileCount > 0) {
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (const m of Sprites.playerMuzzles(formId, projectileCount, lv)) FX.glowCircle(c, m.x, m.y, 4, col, 0.6);
+    c.restore();
+  }
+}
+
+// 四形态
+stage(150, 170, '原体 · 脉冲机炮', '稳定全能 · 三联炮管', '#4fd2ff', (c) => ship(c, 'base', 3, '#4fd2ff', 3));
+stage(480, 170, '左上进化 · 散裂弹幕', '五硬点扇射 · 碎裂/爆裂/追踪', '#ff5de3', (c) => ship(c, 'shotgun', 5, '#ff5de3', 5));
+stage(810, 170, '右上进化 · 贯穿磁轨', '单轴长针 · 贯穿/蓄能/EMP', '#ffd25d', (c) => ship(c, 'rail', 5, '#ffd25d', 1));
+stage(1160, 170, '终极进化 · 湮灭星舰', '五连主炮 · 三喷口 · 棱光', '#e8f4ff', (c) => ship(c, 'ultimate', 5, '#e8f4ff', 5));
+
+stage(150, 485, 'DOT 原型 · 腐蚀孢子', '620px 追踪弹体 · 命中建立腐蚀层', '#8dff5d', (c) => {
+  ship(c, 'nova', 4, '#8dff5d', 1);
+  for (let i = 0; i < 3; i++) {
+    c.save(); c.translate(0, -55 - i * 42); Sprites.bullet(c, 'spore', 6 - i * 0.5, '#8dff5d', -Math.PI / 2, i * 0.35); c.restore();
+  }
+});
+stage(480, 485, '左分支 · 连续焰刃', '前向贝塞尔喷焰 · 线段宽度判定', '#ff9d5d', (c) => {
+  ship(c, 'flameblade', 4, '#ff9d5d', 0);
+  FX.flameBlade(c, 0, -20, -Math.PI / 2, 56, 18, '#ff9d5d', 1.2, 0.82);
+});
+stage(810, 485, '右分支 · 粒子毒雾', '驻留粒子轨迹 · 圆形持续领域', '#5dffd2', (c) => {
+  ship(c, 'mist', 4, '#5dffd2', 0);
+  FX.glowRing(c, 0, 0, 38, '#5dffd2', 0.32, 1.4);
+  for (let i=0;i<10;i++) { const a=i/10*TAU, rr=25+(i%3)*6; FX.mistMote(c,Math.cos(a)*rr,Math.sin(a)*rr,5+(i%2)*2, '#5dffd2',0.55,1.2,i); }
+});
+stage(1160, 485, '终极 · 疫焰天灾', '双旋焰刃 + 粒子雾 + 周期坍缩', '#eaffc7', (c) => {
+  ship(c, 'plague', 5, '#eaffc7', 0);
+  FX.flameBlade(c, 0, 0, -Math.PI/2, 52, 14, '#ff9d5d', 1.2, 0.68);
+  FX.flameBlade(c, 0, 0, Math.PI/2, 52, 14, '#8dff5d', 1.2, 0.58);
+  FX.glowRing(c, 0, 0, 40, '#5dffd2', 0.28, 1.5);
+});
+
+// 进化箭头
+
+
+
+
+
+// 说明
+ctx.font = '12px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#7d94bb';
+ctx.fillText('上：机炮原型 → 双分支 → 终极　｜　下：DOT 原型 → 焰刃 / 粒子雾 → 疫焰终极', 680, 715);
+</script>
+</body>
+</html>

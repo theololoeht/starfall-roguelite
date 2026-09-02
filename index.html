@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>星火战机 Starfall</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="game-wrap">
+  <canvas id="game" width="1080" height="675"></canvas>
+
+  <div id="hud">
+    <div id="top-left">
+      <div id="level-text">Lv 1</div>
+      <div id="stat-strip"></div>
+    </div>
+    <div id="top-right">
+      <div id="time-text">00:00</div>
+      <div id="wave-text">WAVE 1</div>
+      <div id="dps-panel"></div>
+    </div>
+    <div id="bottom-bars">
+      <div id="hp-bar"><div id="hp-fill"></div><span id="hp-text"></span></div>
+      <div id="xp-bar"><div id="xp-fill"></div><span id="xp-text"></span></div>
+    </div>
+    <div id="weapon-slots"></div>
+    <div id="sword-slot" title="挥刀清弹幕">🗡️<span id="sword-cd">就绪·右键</span></div>
+  </div>
+
+  <div id="choices" class="overlay hidden">
+    <h2 id="choices-title">⬆ 选择数值成长</h2>
+    <div id="choice-cards"></div>
+  </div>
+
+  <div id="menu" class="overlay">
+    <h1>星火战机</h1>
+    <p class="sub">STARFALL · NEON ROGUE SHMUP</p>
+    <div id="menu-cols">
+      <div class="menu-col">
+        <p class="pick-tip">① 选择初始武器 —— 本局强化围绕它展开</p>
+        <div id="weapon-pick"></div>
+      </div>
+      <div class="menu-col">
+        <p class="pick-tip">② 流派 BP —— 禁用 1 个，选定 1 个</p>
+        <div id="archetype-bp"></div>
+      </div>
+    </div>
+    <p class="tip">移动：鼠标 / 触屏 / WASD · 右键挥刀清弹幕 · T 技能树<br>每级：数值三选一 + 1 蜂巢技能点（蜂窝自带特殊效果）· 敌机八方包抄</p>
+    <button id="start-btn" disabled>出 击</button>
+  </div>
+
+  <div id="gameover" class="overlay hidden">
+    <h1>坠 机</h1>
+    <div id="run-summary"></div>
+    <div class="btn-row">
+      <button id="retry-btn">再来一局</button>
+      <button id="menu-btn">返回主菜单</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/utils.js?v=23"></script>
+<script src="js/fx.js?v=23"></script>
+<script src="js/assets.js?v=23"></script>
+<script src="js/sprites.js?v=23"></script>
+<script src="js/config.js?v=23"></script>
+<script src="js/attacks.js?v=23"></script>
+<script src="js/spawns.js?v=23"></script>
+<script src="js/weapons.js?v=23"></script>
+<script src="js/entities.js?v=23"></script>
+<script src="js/ui.js?v=23"></script>
+<script src="js/game.js?v=23"></script>
+<script src="js/main.js?v=23"></script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>星火战机 · 怪物生成与数值表</title>
+<style>
+  :root{--bg:#04060e;--panel:#0a1020;--line:#21314d;--cyan:#4fd2ff;--red:#ff4d6d;--gold:#ffd76a;--text:#cfe3ff;--muted:#7087aa}
+  *{box-sizing:border-box} html{min-height:100%;background:var(--bg)} body{min-height:100vh;margin:0;padding:30px;background:radial-gradient(circle at 50% 0,#0b1530,var(--bg) 48%);color:var(--text);font:14px/1.55 "Microsoft YaHei",sans-serif}
+  main{max-width:1180px;margin:auto} h1{letter-spacing:7px;font-size:25px;color:#eef9ff} h1::before{content:'// ';color:var(--cyan)}
+  h2{margin-top:30px;color:var(--gold);font-size:17px;letter-spacing:3px}.note{color:var(--muted);border-left:2px solid var(--cyan);padding-left:12px}
+  table{width:100%;border-collapse:collapse;background:rgba(10,16,32,.86);box-shadow:0 0 28px rgba(79,210,255,.06)}
+  th,td{border:1px solid var(--line);padding:9px 10px;text-align:right;white-space:nowrap} th{background:#0d1930;color:#8fb1dc;font-size:12px}
+  th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left} tbody tr:hover{background:rgba(79,210,255,.05)}
+  .enemy{font-weight:700}.boss{color:var(--red)}.tag{color:var(--cyan)}.warn{color:var(--gold)} code{color:#95e7ff}
+  .modes{display:flex;gap:10px;margin:14px 0 22px}.modes a{padding:7px 13px;border:1px solid var(--line);color:var(--muted);text-decoration:none}.modes a.active{border-color:var(--cyan);color:var(--cyan);background:rgba(79,210,255,.08)}
+</style>
+</head>
+<body>
+<main>
+  <h1>怪物生成与数值表</h1>
+  <p class="note">当前读取：<strong id="mode"></strong>。页面与游戏共用 <code>js/config.js</code>；正式档用于试玩和平衡，测试档用于快速覆盖解锁、编队与 Boss。</p>
+  <div class="modes"><a id="actual-link" href="?balance=actual">正式数值</a><a id="test-link" href="?balance=test">测试数值</a></div>
+  <h2>配置档对照</h2>
+  <table id="profiles"><thead><tr><th>指标</th><th>正式数值</th><th>测试数值</th></tr></thead><tbody></tbody></table>
+  <h2>自然生成列表</h2>
+  <table id="spawn"><thead><tr><th>怪物</th><th>定位</th><th>解锁</th><th>权重</th><th>场上上限</th><th>基础HP</th><th>速度</th><th>碰撞伤害</th><th>XP</th><th>分数</th><th>半径</th></tr></thead><tbody></tbody></table>
+  <h2>特殊生成列表</h2>
+  <table id="special"><thead><tr><th>怪物</th><th>来源</th><th>出现时间</th><th>基础HP</th><th>速度</th><th>伤害</th><th>XP</th><th>分数</th></tr></thead><tbody></tbody></table>
+  <h2>编队列表</h2>
+  <table id="formations"><thead><tr><th>编队</th><th>最早出现</th><th>单位构成（一次随机样例）</th><th>数量</th></tr></thead><tbody></tbody></table>
+  <h2>HP 成长预览</h2>
+  <table id="scales"><thead><tr><th>时间</th><th>波次</th><th>HP倍率</th><th>蜂群HP</th><th>炮手HP</th><th>堡垒HP</th><th>星蚀龙HP</th></tr></thead><tbody></tbody></table>
+</main>
+<script src="../js/utils.js?v=15"></script>
+<script src="../js/config.js?v=15"></script>
+<script>
+const sec = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2,'0')}`;
+const cells = values => `<tr>${values.map((v,i)=>`<td${i===0?' class="enemy"':''}>${v}</td>`).join('')}</tr>`;
+const A = BALANCE_PROFILES.actual, T = BALANCE_PROFILES.test;
+document.querySelector('#profiles tbody').innerHTML = [
+  ['玩家生命倍率', A.combat.playerHpMul, T.combat.playerHpMul],
+  ['玩家伤害倍率', A.combat.playerDamageMul, T.combat.playerDamageMul],
+  ['敌人生命倍率', A.combat.enemyHpMul, T.combat.enemyHpMul],
+  ['敌人伤害倍率', A.combat.enemyDamageMul, T.combat.enemyDamageMul],
+  ['经验倍率', A.combat.xpMul, T.combat.xpMul],
+  ['普通敌人全部解锁', sec(145), sec(145 * T.pacing.unlockScale)],
+  ['Boss 出现', sec(A.pacing.bossAt), sec(T.pacing.bossAt)],
+  ['波次 / 出怪窗口', `${A.pacing.waveLen}s / ${A.pacing.spawnWindow}s`, `${T.pacing.waveLen}s / ${T.pacing.spawnWindow}s`],
+  ['编队首次 / 周期', `${A.pacing.firstFormationAt}s / ${A.pacing.formationInterval}s`, `${T.pacing.firstFormationAt}s / ${T.pacing.formationInterval}s`],
+  ['敌人软上限 / 硬上限', `${A.pacing.enemySoftCap} / ${A.pacing.enemyHardCap}`, `${T.pacing.enemySoftCap} / ${T.pacing.enemyHardCap}`],
+].map(cells).join('');
+document.querySelector('#spawn tbody').innerHTML = ENEMY_SPAWN_ROSTER.map(rule => {
+  const d = ENEMY_DEFS[rule.type];
+  return cells([d.name, `<span class="tag">${rule.role}</span>`, sec(rule.unlockAt), rule.weight, rule.maxAlive, d.hp, d.speed, d.dmg, d.xp, d.score, d.r]);
+}).join('');
+const special = [
+  [ENEMY_DEFS.rock_s.name, '陨石死亡分裂', '继承父怪时点', ENEMY_DEFS.rock_s],
+  [ENEMY_DEFS.dragon.name, '首领时间表', sec(BOSS_SCHEDULE[0].at), ENEMY_DEFS.dragon],
+];
+document.querySelector('#special tbody').innerHTML = special.map(([name,source,at,d]) => cells([`<span class="${d.boss?'boss':''}">${name}</span>`, source, at, d.hp, d.speed, d.dmg, d.xp, d.score])).join('');
+document.querySelector('#formations tbody').innerHTML = Object.entries(FORMATIONS).map(([id,f]) => {
+  const units = f.build(), counts = {};
+  units.forEach(u => counts[ENEMY_DEFS[u.type].name] = (counts[ENEMY_DEFS[u.type].name] || 0) + 1);
+  return cells([f.text.replace('⚠ ',''), sec(formationUnlockAt(f)), Object.entries(counts).map(([n,c])=>`${n}×${c}`).join('、'), units.length]);
+}).join('');
+const previewTimes = BALANCE_MODE === 'test' ? [0,12,24,36,48] : [0,60,120,180,240];
+document.querySelector('#scales tbody').innerHTML = previewTimes.map(t => {
+  const wave = 1 + Math.floor(t / WAVE_LEN);
+  const growth = 1 + t * BALANCE.growth.hpPerSecond + (wave - 1) * BALANCE.growth.hpPerWave;
+  const mul = growth * BALANCE.combat.enemyHpMul;
+  return cells([sec(t), wave, mul.toFixed(2), ...['mite','gunner','bastion','dragon'].map(k => Math.round(ENEMY_DEFS[k].hp * mul))]);
+}).join('');
+document.querySelector('#mode').textContent = `${BALANCE.label}（${BALANCE_MODE}）`;
+document.querySelector(`#${BALANCE_MODE}-link`).classList.add('active');
+</script>
+</body>
+</html>

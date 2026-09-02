@@ -1,0 +1,172 @@
+{
+  "characterId": ".neon-dragon-modules-v2.sg-staging",
+  "engine": "component-row",
+  "game_input": "sprite-sheet-alpha.png",
+  "degraded_static_fallback": false,
+  "curation_applied": false,
+  "frame_variant": "pixel",
+  "sprite_sheet_alpha": "sprite-sheet-alpha.png",
+  "sprite_sheet_alpha_report": "sprite-sheet-alpha.report.json",
+  "base_image": null,
+  "cell": {
+    "shape": "square",
+    "width": 512,
+    "height": 512,
+    "size": 512,
+    "safe_margin": 0
+  },
+  "chroma_key": {
+    "name": "magenta",
+    "hex": "#FF00FF",
+    "rgb": [
+      255,
+      0,
+      255
+    ]
+  },
+  "animation": {
+    "cellWidth": 512,
+    "cellHeight": 512,
+    "columns": 17,
+    "rows": {
+      "modules": {
+        "row": 0,
+        "frames": 17,
+        "fps": 2,
+        "durations_ms": [
+          500,
+          500,
+          500,
+          500,
+          500,
+          500,
+          500,
+          500,
+          500,
+          500,
+          500,
+          500,
+          500,
+          500,
+          500,
+          500,
+          500
+        ],
+        "loop": false,
+        "frame_variant": "pixel"
+      }
+    }
+  },
+  "frame_layout": {
+    "sheetWidth": 8704,
+    "sheetHeight": 512,
+    "cellWidth": 512,
+    "cellHeight": 512,
+    "rows": {
+      "modules": [
+        {
+          "x": 0,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 512,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1024,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 1536,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2048,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 2560,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 3072,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 3584,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 4096,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 4608,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 5120,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 5632,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 6144,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 6656,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 7168,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 7680,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        },
+        {
+          "x": 8192,
+          "y": 0,
+          "w": 512,
+          "h": 512
+        }
+      ]
+    }
+  }
+}
