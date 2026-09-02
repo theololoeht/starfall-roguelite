@@ -44,7 +44,7 @@ const run = result[0];
 assert.equal(run.session, 'test-session');
 assert.equal(run.outcome, 'gameover');
 assert.equal(run.weapon, 'cannon');
-assert.equal(run.balanceRevision, 'v34-feedback-1');
+assert.equal(run.balanceRevision, 'v35-spore-cloud');
 assert.equal(run.damageTaken, 12);
 assert.equal(run.shieldBlocks, 1);
 assert.equal(run.damageBySource.prism_bullet, 12);

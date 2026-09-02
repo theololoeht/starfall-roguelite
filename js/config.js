@@ -1,7 +1,7 @@
 // ===== 画布（横板）=====
 const CANVAS_W = 1080, CANVAS_H = 675;
 const WEAPON_SLOTS = 6;
-const BALANCE_REVISION = 'v34-feedback-1';
+const BALANCE_REVISION = 'v35-spore-cloud';
 
 // ===== 数值配置档 =====
 // 正式版默认使用 actual；测试版使用 ?balance=test；指定 Boss 场景额外加 &debug=boss。
@@ -11,7 +11,10 @@ const BALANCE_PROFILES = {
     id: 'actual', label: '正式数值',
     combat: {
       playerHpMul: 1, playerDamageMul: 1, enemyHpMul: 1.35, enemyDamageMul: 1, xpMul: 1, scoreMul: 1,
-      bossHpMul: { prism: 1.6, dragon: 6 },
+      bossTuning: {
+        prism: { targetSeconds: 28, dpsShare: 0.7, minMul: 1, maxMul: 4 },
+        dragon: { targetSeconds: 36, dpsShare: 0.8, minMul: 1.2, maxMul: 10 },
+      },
     },
     pacing: {
       unlockScale: 1, waveLen: 30, spawnWindow: 20,
@@ -19,7 +22,8 @@ const BALANCE_PROFILES = {
       enemySoftCap: 95, enemyHardCap: 165, bossSoftCap: 34, pressure: 0.75,
       spawnBase: 1.05, spawnMin: 0.38, spawnAcceleration: 0.004,
       emptyFieldAcceleration: 5, groupBase: 2, groupMax: 4, groupRampSeconds: 150,
-      midBossAt: 90, bossAt: 180, massShare: 0.55, firstMassAt: 30, massInterval: 30,
+      midBossAt: 90, bossAt: 180, bossRecovery: 15, bossEntryEnemyCap: 10,
+      massShare: 0.55, firstMassAt: 30, massInterval: 30,
     },
     growth: { hpPerSecond: 0.009, hpPerWave: 0.05 },
   },
@@ -27,7 +31,10 @@ const BALANCE_PROFILES = {
     id: 'test', label: '测试数值',
     combat: {
       playerHpMul: 3, playerDamageMul: 2, enemyHpMul: 0.65, enemyDamageMul: 0.5, xpMul: 3, scoreMul: 1,
-      bossHpMul: { prism: 1, dragon: 1 },
+      bossTuning: {
+        prism: { targetSeconds: 8, dpsShare: 0.55, minMul: 1, maxMul: 2 },
+        dragon: { targetSeconds: 10, dpsShare: 0.6, minMul: 1, maxMul: 3 },
+      },
     },
     pacing: {
       unlockScale: 0.2, waveLen: 12, spawnWindow: 9,
@@ -35,7 +42,8 @@ const BALANCE_PROFILES = {
       enemySoftCap: 60, enemyHardCap: 110, bossSoftCap: 26, pressure: 0.6,
       spawnBase: 0.9, spawnMin: 0.4, spawnAcceleration: 0.008,
       emptyFieldAcceleration: 8, groupBase: 1, groupMax: 2, groupRampSeconds: 48,
-      midBossAt: 18, bossAt: 36, massShare: 0.6, firstMassAt: 10, massInterval: 14,
+      midBossAt: 18, bossAt: 36, bossRecovery: 2.5, bossEntryEnemyCap: 8,
+      massShare: 0.6, firstMassAt: 10, massInterval: 14,
     },
     growth: { hpPerSecond: 0.005, hpPerWave: 0.02 },
   },
@@ -187,7 +195,7 @@ const WEAPON_DEFS = {
   nova: {
     id: 'nova', name: '腐蚀孢子', icon: '☢️', color: '#8dff5d', type: 'nova',
     tag: 'DoT · 远程叠毒',
-    desc: '机体周围释放漂移孢子，靠近敌机后激活追踪并叠加腐蚀；进化为焰刃或粒子雾。',
+    desc: '机体周围长出漂浮孢子，近敌后缓慢追踪；命中碎裂为驻留伤害云，再进化为焰刃或粒子雾。',
   },
   sword: {
     id: 'sword', name: '相位刃', icon: '⚔️', color: '#ff5de3', type: 'sword',
@@ -286,21 +294,22 @@ const SKILL_TREES = {
     forms: {
       base: {
         id: 'base', name: '腐蚀孢子', icon: '☢️', color: '#8dff5d',
-        desc: '原型机：机体周围释放漂移孢子，近敌激活追踪，命中后建立持续伤害',
+        desc: '原型机：机体周围长出漂浮孢子陷阱，缓慢追敌；命中碎裂为驻留伤害云',
         fire: {
-          mode: 'spore', damage: 5, range: 620, interval: 0.72, bulletSpeed: 520, bulletR: 7, pierce: 1,
+          mode: 'spore', damage: 2, range: 620, interval: 0.68, bulletSpeed: 185, bulletR: 8, pierce: 1,
           stacks: 1, stackDps: 1.5, maxStacks: 4, stackDuration: 3.5,
+          cloudRadius: 54, cloudDuration: 3, cloudDps: 8, cloudMaxAlive: 10,
           origin: { type: 'bodyScatter', minRadius: 8, maxRadius: 26 },
-          targeting: { type: 'proximityArm', acquireRadius: 150, turnSpeed: 4.2 },
-          launch: { driftSpeedMinMul: 0.18, driftSpeedMaxMul: 0.28, chaseAccel: 420 },
-          capacity: { maxAlive: 10 }, life: 5.5,
+          targeting: { type: 'proximityArm', acquireRadius: 190, turnSpeed: 2.5 },
+          launch: { driftSpeedMinMul: 0.25, driftSpeedMaxMul: 0.45, chaseAccel: 100 },
+          capacity: { maxAlive: 12 }, life: 7,
         },
         nodes: [
           { id: 'n1', name: '扩散介质', desc: '所有范围或射程 +20%', apply(f) { f.rangeMul = (f.rangeMul || 1) * 1.2; } },
           { id: 'n2', name: '催化毒层', desc: '腐蚀层数上限 +3', apply(f) { f.maxStacks += 3; } },
-          { id: 'n3', name: '长效残留', desc: '腐蚀伤害 +45%，持续时间 +1.5 秒', apply(f) { f.dotMul = (f.dotMul || 1) * 1.45; f.stackDuration += 1.5; } },
+          { id: 'n3', name: '菌幕续生', desc: '孢子命中后留下的伤害云持续时间 +1.8 秒', apply(f) { f.cloudDuration += 1.8; } },
         ],
-        capstone: { id: 'n0', name: '裂孢弹头', desc: '孢子命中时感染 48px 内其他敌机；解锁焰刃与粒子雾分支', apply(f) { f.sporeBurst = 48; } },
+        capstone: { id: 'n0', name: '裂孢菌毯', desc: '孢子云半径 +35%、持续伤害 +25%；解锁焰刃与粒子雾分支', apply(f) { f.cloudRadius *= 1.35; f.cloudDps *= 1.25; } },
         evolutions: [
           { id: 'flameblade', name: '精华 · 连续焰刃', icon: '🔥', color: '#ff9d5d', desc: '将远程孢子改造为朝机头持续喷射的中近程腐蚀焰刃' },
           { id: 'mist', name: '精华 · 粒子毒雾', icon: '🫧', color: '#5dffd2', desc: '释放驻留粒子雾，持续污染机体周围区域' },

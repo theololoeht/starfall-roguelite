@@ -2,9 +2,12 @@
 class GameEncounterSystem {
   updateBossSchedule() {
     if (this.enemies.some(enemy => enemy.def?.boss && !enemy.dead)) return;
+    if (this.time < (this.bossCooldownUntil || 0)) return;
     for (const event of BOSS_SCHEDULE) {
       const key = `${event.type}@${event.at}`;
       if (this.time < event.at || this.triggeredBosses.has(key)) continue;
+      const normalAlive = this.enemies.filter(enemy => !enemy.dead && !enemy.def?.boss).length;
+      if (normalAlive > BALANCE.pacing.bossEntryEnemyCap) continue;
       this.triggeredBosses.add(key);
       this.spawnQueue.length = 0;
       const boss = event.type === 'prism'
@@ -13,14 +16,17 @@ class GameEncounterSystem {
           ? new DragonBoss(-90, this.H * 0.28, this.hpScale())
           : null;
       if (!boss) throw new Error(`Boss 缺少实体工厂: ${event.type}`);
-      const bossHpMul = BALANCE.combat.bossHpMul?.[event.type] || 1;
-      boss.maxHp *= bossHpMul;
+      const tuning = BALANCE.combat.bossTuning?.[event.type];
+      if (tuning) {
+        const baseHp = boss.maxHp;
+        const outputHp = Math.max(1, this.player.dpsEstimate || 1) * tuning.targetSeconds * tuning.dpsShare;
+        boss.maxHp = clamp(outputHp, baseHp * tuning.minMul, baseHp * tuning.maxMul);
+      }
       boss.hp = boss.maxHp;
       this.enemies.push(boss);
       if (typeof RunMonitor !== 'undefined') RunMonitor.event('boss_spawned', { boss:event.type }, this);
       this.announce = { text: event.announce, t: 3.2 };
-      this.bossIntroT = event.intro || 1.2;
-      transitionRunState(this, RUN_STATES.BOSS_INTRO, `boss:${event.type}`);
+      // Boss 自身出生无敌负责入场预警；保持 PLAYING，避免整帧世界冻结造成“卡一下”。
     }
   }
 
@@ -44,11 +50,13 @@ class GameEncounterSystem {
       RunMonitor.event('enemy_defeated', { enemy:e.type, boss:!!e.def?.boss, offscreen }, this);
       if (e.def?.boss) RunMonitor.bossDefeated(this, e);
     }
-    if (e.def?.boss && BOSS_SCHEDULE.some(event => event.type === e.type && event.final)) {
+    const bossEvent = e.def?.boss ? BOSS_SCHEDULE.find(event => event.type === e.type) : null;
+    if (bossEvent?.final) {
       transitionRunState(this, RUN_STATES.VICTORY, `boss-defeated:${e.type}`);
       UI.showVictory({ time:this.time, wave:this.wave, level:this.level, kills:this.kills, score:this.score });
     } else if (e.def?.boss) {
-      this.announce = { text:`✓ ${e.def.name} 已摧毁 · 航道恢复`, t:2.8 };
+      this.bossCooldownUntil = this.time + BALANCE.pacing.bossRecovery;
+      this.announce = { text:`✓ ${e.def.name} 已摧毁 · ${BALANCE.pacing.bossRecovery}秒整备`, t:3.2 };
     }
     // 自爆虫：死亡时殉爆（对玩家造成范围伤害）
     if (e.def.bomb) this.explosionHostile(e.x, e.y, e.def.bomb.r, scaledEnemyDamage(e.def.bomb.dmg), e.def.color);

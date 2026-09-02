@@ -12,6 +12,16 @@ class GameCollisionSystem {
         b.hits.add(e);
         e.hurt(b.dmg * zone.damageMul, this, true);
         b.applyCorrosionTo(e);
+        if (b.sporeCloud) {
+          const cloud = b.sporeCloud;
+          const aliveClouds = this.sporeClouds.filter(x => !x.dead);
+          if (aliveClouds.length >= cloud.maxAlive) aliveClouds.sort((a, c) => a.life - c.life)[0].dead = true;
+          this.sporeClouds.push(new SporeCloud(b.x, b.y, cloud.radius, cloud.duration, cloud.dps, b.color));
+          this.rings.push(new Ring(b.x, b.y, 5, cloud.radius, 0.32, b.color, 2));
+          this.burst(b.x, b.y, b.color, 9, 150);
+          b.dead = true;
+          break;
+        }
         // 裂孢弹头只传播腐蚀层，不复制直伤；防止密集敌群中伤害指数膨胀。
         if (b.corrosionRadius) {
           for (const e2 of this.enemies) {

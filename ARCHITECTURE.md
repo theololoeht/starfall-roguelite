@@ -68,7 +68,7 @@ menu -> playing -> levelup/tree/paused -> bossIntro -> playing
      -> victory | gameover -> retry/menu
 ```
 
-只有 `playing` 可以推进战斗计时、自然出怪和攻击冷却。升级、技能树、暂停、Boss 演出与结算期间是否更新时间，必须由状态机明确决定，不能分散写在多个条件中。
+只有 `playing` 可以推进完整战斗计时、自然出怪和攻击冷却。升级、技能树、暂停与结算期间是否更新时间，必须由状态机明确决定。Boss 登场现在使用实体自身的出生无敌与公告叠层，不再切入冻结世界的 `bossIntro`，避免玩家误判为性能卡顿。
 
 ## 7. 数值规范
 
@@ -106,7 +106,7 @@ menu -> playing -> levelup/tree/paused -> bossIntro -> playing
 
 - `game-spawning.js`：生成请求、预算、自然刷怪、大批量方案与阵型。
 - `game-collision.js`：玩家/敌人/弹体碰撞和最近目标查询。
-- `game-encounter.js`：Boss 调度、入场冻结、敌人死亡副作用与胜利结算。
+- `game-encounter.js`：Boss 调度、无冻结入场、整备间隔、敌人死亡副作用与胜利结算。
 - `game-progression.js`：经验、属性选择、技能树往返和成长倍率。
 - `game-skill-tree.js`：技能树布局、点击决策与全屏绘制。
 - `game-effects.js`：粒子爆发、范围爆炸、飘字与屏幕震动。

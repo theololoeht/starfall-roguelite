@@ -9,7 +9,7 @@ class Game {
     this.bgScroll = 0;
     this.nebulaCv = this.buildNebula();
     this.state = RUN_STATES.MENU;
-    this.beams = []; this.dragonBreaths = []; this.rings = []; this.flashes = []; this.zaps = []; this.mines = [];
+    this.beams = []; this.dragonBreaths = []; this.rings = []; this.flashes = []; this.zaps = []; this.mines = []; this.sporeClouds = [];
     this.shakeMag = 0;
     this.last = performance.now();
     this.loop = this.loop.bind(this);
@@ -46,7 +46,7 @@ class Game {
     refreshPlayerAttackMetrics(this.player);
     this.enemies = []; this.pBullets = []; this.eBullets = [];
     this.gems = []; this.trails = []; this.particles = []; this.floats = [];
-    this.beams = []; this.dragonBreaths = []; this.rings = []; this.flashes = []; this.zaps = []; this.mines = [];
+    this.beams = []; this.dragonBreaths = []; this.rings = []; this.flashes = []; this.zaps = []; this.mines = []; this.sporeClouds = [];
     const localBossDebug = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && DEBUG_SETTINGS?.bossType;
     const debugBossEvent = localBossDebug ? BOSS_SCHEDULE.find(event => event.type === DEBUG_SETTINGS.bossType) : null;
     this.debugBoss = !!debugBossEvent;
@@ -64,6 +64,7 @@ class Game {
     this.spawnGroupSeq = 0;
     this.formationHistory = [];
     this.triggeredBosses = new Set();  // 本局已触发的首领时间点
+    this.bossCooldownUntil = 0;
     if (debugBossEvent) {
       for (const event of BOSS_SCHEDULE) if (event.at < debugBossEvent.at) this.triggeredBosses.add(`${event.type}@${event.at}`);
     }
@@ -132,6 +133,7 @@ class Game {
     for (const b of this.eBullets) b.update(dt);
     for (const g of this.gems) g.update(dt, this);
     for (const t of this.trails) t.update(dt, this);
+    for (const cloud of this.sporeClouds) cloud.update(dt, this);
 
     this.collide();
 
@@ -140,6 +142,7 @@ class Game {
     this.eBullets = this.eBullets.filter(b => !b.dead);
     this.gems = this.gems.filter(g => !g.dead);
     this.trails = this.trails.filter(t => !t.dead);
+    this.sporeClouds = this.sporeClouds.filter(cloud => !cloud.dead);
     for (const p of this.particles) p.update(dt);
     this.particles = this.particles.filter(p => !p.dead);
     for (const r of this.rings) r.update(dt);
@@ -291,6 +294,7 @@ class Game {
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
     }
     for (const t of this.trails) t.draw(ctx);
+    for (const cloud of this.sporeClouds) cloud.draw(ctx);
     for (const m of this.mines) m.draw(ctx);
     for (const g of this.gems) g.draw(ctx);
     for (const e of this.enemies) {

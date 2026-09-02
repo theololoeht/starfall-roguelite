@@ -49,7 +49,7 @@ const result = vm.runInContext(`(() => {
   const novaGame = {player:novaPlayer,enemies:[novaEnemy],pBullets:[],nearestEnemy(x,y,r){return Math.hypot(novaEnemy.x-x,novaEnemy.y-y)<=r?novaEnemy:null;},rings:[],flashes:[],shake(){},burst(){}};
   novaTick(novaGame,novaWeapon,1/60);
   const spore = novaGame.pBullets[0];
-  const novaShot = {count:novaGame.pBullets.length,vis:spore?.vis,homing:spore?.homing,damage:novaEnemy.damage,rangeLife:spore?.life,
+  const novaShot = {count:novaGame.pBullets.length,vis:spore?.vis,homing:spore?.homing,damage:novaEnemy.damage,rangeLife:spore?.life,cloud:spore?.sporeCloud,
     spawnNear:Math.hypot(spore.x-novaPlayer.x,spore.y-novaPlayer.y)<40,
     noLock:spore.homeTarget===null};
   // 近距武装：远处保持漂移，敌机靠近孢子后锁定并加速。
@@ -64,6 +64,8 @@ const result = vm.runInContext(`(() => {
   const sporeCap = novaGame.pBullets.filter(b => !b.dead && b.ownerAttackId === 'nova:base:0').length;
   spore.applyCorrosionTo(novaEnemy);
   const novaHit = {damage:novaEnemy.damage,stacks:novaEnemy.dot.stacks,dps:novaEnemy.dot.dps,time:novaEnemy.dot.time};
+  const cloudUpgrade = {...SKILL_TREES.nova.forms.base.fire};
+  SKILL_TREES.nova.forms.base.nodes.find(n=>n.id==='n3').apply(cloudUpgrade);
   const regen0 = dotRegenScaling({regen:0}), regen3 = dotRegenScaling({regen:3}), regenCap = dotRegenScaling({regen:10});
 
   const flameEnemy = enemyAt(170,100), flamePlayer = novaFormPlayer('flameblade'), flameWeapon = makeWeapon('nova');
@@ -98,20 +100,22 @@ const result = vm.runInContext(`(() => {
     ready:[!!SKILL_TREES.nova,!!SKILL_TREES.sword],
     branchForms:SKILL_TREES.nova.branchForms,
     visuals:['nova','flameblade','mist','plague'].map(id=>Sprites.playerExhausts(id).length),
-    novaShot,novaHit,sporeCap,stayedUnarmed,armedNearby,speedBeforeArm,speedAfterArm,regen0,regen3,regenCap,flame,mist,plague,swordBefore,swordAfter,
+    novaShot,novaHit,cloudUpgradeDuration:cloudUpgrade.cloudDuration,sporeCap,stayedUnarmed,armedNearby,speedBeforeArm,speedAfterArm,regen0,regen3,regenCap,flame,mist,plague,swordBefore,swordAfter,
   };
 })()`, context);
 
 assert.equal(result.ready.join(','), 'true,true', '腐蚀孢子与相位刃必须进入正式可选列表');
-assert.equal(result.novaShot.count, 1, '腐蚀孢子应在远距离目标存在时发射一枚弹体');
+assert.equal(result.novaShot.count, 1, '腐蚀孢子应在机体附近生成一枚漂浮陷阱');
 assert(result.novaShot.vis === 'spore' && result.novaShot.homing, '腐蚀孢子必须使用独立视觉并轻度追踪');
 assert(result.novaShot.spawnNear, '孢子应在机体附近随机生成（而非炮口直射）');
 assert(result.novaShot.noLock, '无敌机靠近时孢子不应锁定目标（近距武装）');
-assert(result.stayedUnarmed && result.armedNearby, '孢子应先漂移，并在敌机进入 150px 后才锁定');
-assert(result.speedAfterArm > result.speedBeforeArm, '孢子锁定后应从慢速漂移加速为追踪弹');
-assert.equal(result.sporeCap, 10, '孢子存活数必须受独立容量上限约束');
+assert(result.stayedUnarmed && result.armedNearby, '孢子应先漂移，并在敌机进入 190px 后才缓慢追踪');
+assert(result.speedAfterArm > result.speedBeforeArm, '孢子锁定后应从慢速漂移渐进加速');
+assert.equal(result.sporeCap, 12, '孢子存活数必须受独立容量上限约束');
 assert.equal(result.novaShot.damage, 0, '孢子生成时不得隔空造成伤害');
 assert(result.novaShot.rangeLife > 1, '弹体寿命必须覆盖基础 620px 射程');
+assert(result.novaShot.cloud.radius === 54 && result.novaShot.cloud.duration === 3 && result.novaShot.cloud.dps === 8, '孢子必须携带命中后驻留云配置');
+assert(Math.abs(result.cloudUpgradeDuration - 4.8) < 1e-9, '菌幕续生必须只延长孢子云持续时间');
 assert(result.novaHit.stacks === 1 && result.novaHit.dps > 0 && result.novaHit.time > 0, '孢子命中应写入一层腐蚀快照');
 assert.equal(result.regen0.poisonMul, 1, '零恢复不应额外放大毒伤');
 assert(Math.abs(result.regen3.poisonMul - 1.36) < 1e-9 && Math.abs(result.regen3.rangeMul - 1.15) < 1e-9, '3/s 恢复应转换为 +36% 毒伤和 +15% 距离');

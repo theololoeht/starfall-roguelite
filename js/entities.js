@@ -875,6 +875,7 @@ class Bullet {
     // DOT 弹在发射时冻结层数与倍率，避免命中前切形态或回血导致结果漂移。
     this.corrosion = opts.corrosion || null;
     this.corrosionRadius = opts.corrosionRadius || 0;
+    this.sporeCloud = opts.sporeCloud || null;
   }
   applyCorrosionTo(enemy) {
     if (!this.corrosion || !enemy || enemy.dead || !enemy.dot) return false;
@@ -995,6 +996,44 @@ class TrailSeg {
   draw(ctx) {
     const k = this.life / this.maxLife;
     FX.glowCircle(ctx, this.x, this.y, this.r * (0.9 + 0.5 * k), this.color, 0.16 * k);
+  }
+}
+
+// ===== 孢子云：漂浮孢子命中后原地碎裂形成的持续伤害区 =====
+class SporeCloud {
+  constructor(x, y, radius, life, dps, color) {
+    this.x = x; this.y = y; this.radius = radius;
+    this.life = this.maxLife = life; this.dps = dps; this.color = color;
+    this.dead = false; this.age = 0; this.tickT = 0;
+    this.phase = rand(0, TAU);
+  }
+  update(dt, game) {
+    this.life -= dt; this.age += dt; this.tickT -= dt;
+    if (this.life <= 0) { this.dead = true; return; }
+    if (this.tickT > 0) return;
+    const tick = 0.15;
+    this.tickT = tick;
+    for (const e of game.enemies) {
+      if (e.dead || e.spawning) continue;
+      const zone = e.circleHit(this.x, this.y, this.radius);
+      if (zone) e.hurt(this.dps * tick * zone.damageMul, game, false);
+    }
+  }
+  draw(ctx) {
+    const fade = clamp(this.life / Math.min(0.65, this.maxLife), 0, 1);
+    const pulse = 0.94 + Math.sin(this.age * 4 + this.phase) * 0.06;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    FX.glowCircle(ctx, this.x, this.y, this.radius * pulse, this.color, 0.13 * fade);
+    for (let i = 0; i < 7; i++) {
+      const a = this.phase + i / 7 * TAU + Math.sin(this.age * 0.8 + i) * 0.22;
+      const rr = this.radius * (0.18 + (i % 3) * 0.18);
+      const x = this.x + Math.cos(a) * rr, y = this.y + Math.sin(a) * rr;
+      FX.glowCircle(ctx, x, y, 5 + (i % 3) * 2, i % 2 ? '#d7ff8d' : this.color, 0.2 * fade);
+    }
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * (0.82 + Math.sin(this.age * 3) * 0.05), 0, TAU);
+    ctx.strokeStyle = hexA(this.color, 0.32 * fade); ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.restore();
   }
 }
 

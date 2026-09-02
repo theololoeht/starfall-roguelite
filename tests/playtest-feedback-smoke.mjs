@@ -11,16 +11,16 @@ for (const file of ['js/utils.js', 'js/config.js']) {
 const balance = vm.runInContext(`({
   revision:BALANCE_REVISION,
   enemyHpMul:BALANCE.combat.enemyHpMul,
-  bossHpMul:{...BALANCE.combat.bossHpMul},
+  bossTuning:JSON.parse(JSON.stringify(BALANCE.combat.bossTuning)),
   spawnBase:BALANCE.pacing.spawnBase,
   spawnMin:BALANCE.pacing.spawnMin,
   groupBase:BALANCE.pacing.groupBase,
   groupMax:BALANCE.pacing.groupMax,
   autoAimTurnSpeed:PLAYER_BASE.autoAimTurnSpeed,
 })`, context);
-assert.equal(balance.revision, 'v34-feedback-1');
+assert.equal(balance.revision, 'v35-spore-cloud');
 assert(balance.enemyHpMul > 1);
-assert(balance.bossHpMul.prism > 1 && balance.bossHpMul.dragon >= 6);
+assert(balance.bossTuning.prism.targetSeconds >= 20 && balance.bossTuning.dragon.maxMul >= 8);
 assert(balance.spawnMin < 0.5 && balance.groupBase >= 2 && balance.groupMax >= 4);
 assert(balance.autoAimTurnSpeed >= 8 && balance.autoAimTurnSpeed <= 10, '自动转向应灵敏但有限速');
 

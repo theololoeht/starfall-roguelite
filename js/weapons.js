@@ -213,7 +213,11 @@ function corrosionSporeTick(game, w, dt, p, st, key = 'spore') {
     { homing: true, homingRange: range, homingProximity:st.targeting?.acquireRadius || 150,
       homingTurn:st.targeting?.turnSpeed || 4.2, homingSpeed:st.bulletSpeed,
       homingAccel:st.launch?.chaseAccel || 420, ownerAttackId:key, vis: 'spore',
-      corrosion: { stacks:st.stacks, layerDps, maxStacks:st.maxStacks, duration:st.stackDuration }, corrosionRadius:st.sporeBurst || 0 }
+      corrosion: { stacks:st.stacks, layerDps, maxStacks:st.maxStacks, duration:st.stackDuration },
+      sporeCloud: {
+        radius:st.cloudRadius * (st.rangeMul || 1), duration:st.cloudDuration,
+        dps:st.cloudDps * p.dmgMul, maxAlive:st.cloudMaxAlive,
+      } }
   );
   b.life = st.life || 5.5;
   game.pBullets.push(b);
@@ -650,7 +654,7 @@ registerAttackHandler('pulse', {
   estimateDps: (st, p) => st.pulseDmg / st.interval * attackDamageMul(p) * attackSpeedMul(p) + fullCorrosionDps(st, p),
 });
 registerAttackHandler('spore', {
-  required: ['damage', 'range', 'interval', 'bulletSpeed', 'bulletR', 'stacks', 'stackDps', 'maxStacks', 'stackDuration', 'life'],
+  required: ['damage', 'range', 'interval', 'bulletSpeed', 'bulletR', 'stacks', 'stackDps', 'maxStacks', 'stackDuration', 'cloudRadius', 'cloudDuration', 'cloudDps', 'cloudMaxAlive', 'life'],
   validate(st, path) {
     if (st.origin?.type !== 'bodyScatter') throw new Error(`${path}: spore 必须使用 bodyScatter origin`);
     if (st.targeting?.type !== 'proximityArm' || !Number.isFinite(st.targeting.acquireRadius)) {
@@ -659,7 +663,7 @@ registerAttackHandler('spore', {
     if (!Number.isFinite(st.capacity?.maxAlive) || st.capacity.maxAlive < 1) throw new Error(`${path}: spore 必须配置 capacity.maxAlive`);
   },
   update: ({ game, weapon, dt, owner, spec, key }) => corrosionSporeTick(game, weapon, dt, owner, spec, key),
-  estimateDps: (st, p) => st.damage / st.interval * attackDamageMul(p) * attackSpeedMul(p) + fullCorrosionDps(st, p),
+  estimateDps: (st, p) => (st.damage + st.cloudDps * st.cloudDuration) / st.interval * attackDamageMul(p) * attackSpeedMul(p) + fullCorrosionDps(st, p),
 });
 registerAttackHandler('flameblade', {
   required: ['dps', 'range', 'width', 'tick', 'stackEvery', 'stackDps', 'maxStacks', 'stackDuration'],

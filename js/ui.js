@@ -159,7 +159,8 @@ const UI = {
             const range = f.range * (f.rangeMul || 1) * regen.rangeMul;
             const hit = f.damage * p.dmgMul;
             const layer = f.stackDps * (f.dotMul || 1) * regen.poisonMul * p.dmgMul;
-            lines = [`孢子命中 <b>${hit.toFixed(1)}</b> · 射程 ${Math.round(range)}px`, `射速 <b>${rps.toFixed(2)}/s</b> · 每次 +${f.stacks} 层`, `单层毒伤 <span class="dps">${layer.toFixed(1)}/s</span> · 恢复转化 ${Math.round((regen.poisonMul - 1) * 100)}%`];
+            const cloudDps = f.cloudDps * p.dmgMul;
+            lines = [`漂浮孢子 <b>${hit.toFixed(1)}</b> · 感应范围 ${Math.round(range)}px`, `碎裂云 <b>${cloudDps.toFixed(1)} DPS</b> · ${Math.round(f.cloudRadius * (f.rangeMul || 1))}px · ${f.cloudDuration.toFixed(1)}s`, `每次 +${f.stacks} 层 · 单层毒伤 <span class="dps">${layer.toFixed(1)}/s</span>`];
           } else if (mode === 'pulse') {
             const radius = f.radius * (f.rangeMul || 1), pulse = f.pulseDmg * p.dmgMul;
             lines = [`脉冲 <b>${pulse.toFixed(1)}</b> · 半径 ${Math.round(radius)}px`, `周期 <b>${interval.toFixed(2)}s</b> · 每次 +${f.stacks} 层`, `满层持续DPS <span class="dps">${fullDot.toFixed(1)}</span>（上限 ${f.maxStacks}）`];
