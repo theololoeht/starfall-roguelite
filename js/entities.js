@@ -155,6 +155,7 @@ class Player {
       game.rings.push(new Ring(this.x, this.y, 16, 44, 0.35, '#7dcfff', 3));
       game.flashes.push(new Flash(this.x, this.y, 26, 0.2, '#7dcfff'));
       game.addFloat(this.x, this.y - 24, '护盾抵消', '#7dcfff', 13);
+      if (typeof RunMonitor !== 'undefined') RunMonitor.damage(game, 0, source, true);
       return;
     }
     dmg = Math.max(1, Math.round(dmg - this.armor));
@@ -164,6 +165,7 @@ class Player {
     this.hitIdleT = 0;
     game.burst(this.x, this.y, '#ff3d6e', 8, 120);
     game.addFloat(this.x, this.y - 22, '-' + dmg, '#ff3d6e', 15);
+    if (typeof RunMonitor !== 'undefined') RunMonitor.damage(game, dmg, source, false);
   }
 
   // ── 飞机外观随主武器及其等级进化 ──

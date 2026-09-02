@@ -98,6 +98,7 @@ menu -> playing -> levelup/tree/paused -> bossIntro -> playing
 - 自动化结果原本只写控制台，不利于外部测试读取。现在通过 `documentElement.dataset` 发布 `running/finished/failed` 状态、状态迁移和失败堆栈，使测试脚本自身失效也可观测。
 - 首次在隔离暂存区运行拆分测试时缺少 `utils.js` 等只读依赖，出现 `ENOENT`。这是测试环境组装不完整，不是生产逻辑错误；补齐真实依赖后原测试通过，未向生产代码加入兼容分支。
 - 中期 Boss 接入暴露出遭遇调度对 `dragon` 的硬编码，以及文档声称限制自然怪但代码仍持续刷新的偏差。现使用显式实体分派、活动 Boss 互斥和 Boss 期间自然生成暂停，避免两场 Boss 重叠及随机怪掩盖机制。
+- 三局调平衡使用 `telemetry=1` 显式启用本地遥测。记录器只保存玩法指标到同源 `localStorage`，不上传输入轨迹；刷新造成的未完成局标记为 `abandoned`，避免混入有效样本。
 
 ## 9. Game 子系统边界
 

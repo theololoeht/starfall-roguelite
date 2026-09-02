@@ -14,6 +14,7 @@ class GameEncounterSystem {
           : null;
       if (!boss) throw new Error(`Boss 缺少实体工厂: ${event.type}`);
       this.enemies.push(boss);
+      if (typeof RunMonitor !== 'undefined') RunMonitor.event('boss_spawned', { boss:event.type }, this);
       this.announce = { text: event.announce, t: 3.2 };
       this.bossIntroT = event.intro || 1.2;
       transitionRunState(this, RUN_STATES.BOSS_INTRO, `boss:${event.type}`);
@@ -35,6 +36,10 @@ class GameEncounterSystem {
     this.rings.push(new Ring(e.x, e.y, e.r, e.r * 3.2, 0.4, e.def.color, 3));
     this.burst(e.x, e.y, e.def.color, 8 + Math.floor(e.r / 3), e.r * 7);
     this.shake(e.r / 8);
+    if (typeof RunMonitor !== 'undefined') {
+      RunMonitor.event('enemy_defeated', { enemy:e.type, boss:!!e.def?.boss }, this);
+      if (e.def?.boss) RunMonitor.bossDefeated(this, e);
+    }
     if (e.def?.boss && BOSS_SCHEDULE.some(event => event.type === e.type && event.final)) {
       transitionRunState(this, RUN_STATES.VICTORY, `boss-defeated:${e.type}`);
       UI.showVictory({ time:this.time, wave:this.wave, level:this.level, kills:this.kills, score:this.score });

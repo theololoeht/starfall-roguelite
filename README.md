@@ -39,6 +39,8 @@ http://127.0.0.1:8765/?balance=test&debug=boss
 http://127.0.0.1:8765/?balance=test&debug=midboss
 http://127.0.0.1:8765/?balance=test&debugForm=plague
 http://127.0.0.1:8765/?balance=test&debug=boss&autoplay=1&weapon=sword
+http://127.0.0.1:8765/?telemetry=1&session=three-run-balance&runs=3
+http://127.0.0.1:8765/dev/run-monitor.html
 ```
 
 ## 测试
@@ -58,6 +60,7 @@ node tests/playable-weapons-smoke.mjs
 node tests/sword-progression-smoke.mjs
 node tests/run-state-smoke.mjs
 node tests/game-systems-smoke.mjs
+node tests/telemetry-smoke.mjs
 ```
 
 ## 项目结构
@@ -78,6 +81,7 @@ style.css     页面与 UI 样式
 - [BALANCE.md](BALANCE.md)
 - [BULLETS.md](BULLETS.md)
 - [MONSTERS.md](MONSTERS.md)
+- [PLAYTEST.md](PLAYTEST.md)
 
 ## 后续计划
 

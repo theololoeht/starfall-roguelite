@@ -93,6 +93,7 @@ class GameSkillTreeSystem {
       p.formId = n.ref.id;
       if (!p.formChain.includes(n.ref.id)) p.formChain.push(n.ref.id);
       p.recomputeFire();
+      if (typeof RunMonitor !== 'undefined') RunMonitor.event('form_evolved', { form:n.ref.id }, this);
       this.flashes.push(new Flash(p.x, p.y, 80, 0.5, n.ref.color));
       this.rings.push(new Ring(p.x, p.y, 12, 110, 0.6, n.ref.color, 4));
       this.shake(5);
@@ -102,6 +103,7 @@ class GameSkillTreeSystem {
     if (sk.points <= 0) return;
     sk.points--;
     sk.spent.add(n.ref.id);
+    if (typeof RunMonitor !== 'undefined') RunMonitor.event('skill_selected', { skill:n.ref.id, form:p.formId }, this);
     p.recomputeFire();
     this.rings.push(new Ring(n.x, n.y, 8, 40, 0.4, SKILL_TREES[p.treeId].color, 3));
   }

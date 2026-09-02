@@ -24,6 +24,7 @@ class GameProgressionSystem {
 
   pickStat(c) {
     c.apply(this.player);
+    if (typeof RunMonitor !== 'undefined') RunMonitor.event('stat_selected', { choice:c.id }, this);
     refreshPlayerAttackMetrics(this.player);
     this.statPending--;
     this.addFloat(this.player.x, this.player.y - 28, c.name, '#4fd2ff', 14);

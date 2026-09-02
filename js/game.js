@@ -81,11 +81,14 @@ class Game {
       if (UI.els.choices) UI.els.choices.classList.add('hidden');
       if (UI.els.victory) UI.els.victory.classList.add('hidden');
     }
+    if (typeof RunMonitor !== 'undefined') RunMonitor.start(this);
   }
 
   loop(now) {
-    const dt = Math.min(0.033, (now - this.last) / 1000);
+    const rawDt = (now - this.last) / 1000;
+    const dt = Math.min(0.033, rawDt);
     this.last = now;
+    if (typeof RunMonitor !== 'undefined') RunMonitor.frame(rawDt);
     try {
       if (this.state === RUN_STATES.PLAYING) this.update(dt);
       else if (this.state === RUN_STATES.BOSS_INTRO) this.updateBossIntro(dt);
@@ -152,6 +155,7 @@ class Game {
     if (this.announce) { this.announce.t -= dt; if (this.announce.t <= 0) this.announce = null; }
 
     this.shakeMag = Math.max(0, this.shakeMag - dt * 14);
+    if (typeof RunMonitor !== 'undefined') RunMonitor.sample(this);
 
     if (this.player.hp <= 0) {
       transitionRunState(this, RUN_STATES.GAMEOVER, 'player-defeated');

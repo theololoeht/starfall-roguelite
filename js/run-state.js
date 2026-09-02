@@ -23,5 +23,6 @@ function transitionRunState(game, to, reason = '', force = false) {
   if (!force && !canTransitionRunState(from, to)) throw new Error(`非法状态转换: ${from} -> ${to}${reason ? ` (${reason})` : ''}`);
   game.state = to;
   game.lastStateTransition = { from, to, reason, at:game.time || 0 };
+  if (typeof RunMonitor !== 'undefined') RunMonitor.transition(game, from, to, reason);
   return to;
 }
