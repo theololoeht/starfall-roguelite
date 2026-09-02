@@ -16,6 +16,15 @@ const result = vm.runInContext(`(() => {
   const playable = [...PLAYABLE_WEAPON_IDS];
   const experimental = [...EXPERIMENTAL_WEAPON_IDS];
   const deadEnds = [];
+  let legacyFusionRejected = false;
+  const playableUseTreeStats = playable.every(id => {
+    const weapon = makeWeapon(id);
+    const baseFire = SKILL_TREES[id].forms.base.fire;
+    return !WEAPON_DEFS[id].levelStats && weapon.stats.damage === baseFire.damage;
+  });
+
+  try { makeWeapon('annihilator'); }
+  catch (_) { legacyFusionRejected = true; }
 
   for (const id of playable) {
     const tree = SKILL_TREES[id];
@@ -27,12 +36,14 @@ const result = vm.runInContext(`(() => {
     }
   }
 
-  return { valid, playable, experimental, deadEnds };
+  return { valid, playable, experimental, deadEnds, legacyFusionRejected, playableUseTreeStats };
 })()`, context);
 
 assert(result.valid, '正式武器定义必须通过启动校验');
 assert.equal(result.playable.join(','), 'cannon,nova,sword', '正式开局范围必须明确且稳定');
 assert(result.playable.every(id => !result.experimental.includes(id)), '正式与实验武器不得重叠');
 assert.equal(result.experimental.sort().join(','), 'laser,ram,trail', '未完成武器应留在实验范围');
+assert(result.legacyFusionRejected, '已废止的旧融合武器不得再由运行时创建');
+assert(result.playableUseTreeStats, '正式武器的运行数值必须只读取技能树');
 
 console.log('playable-weapons-smoke:', result);

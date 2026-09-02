@@ -7,7 +7,7 @@ class Player {
     this.vx = 0; this.vy = 0;
     this.iframes = 0;
     this.dashT = 0; this.dashVx = 0; this.dashVy = 0;
-    this.dashDamage = 0; this.dashFusion = false; this.dashHits = new Set();
+    this.dashDamage = 0; this.dashHits = new Set();
     this.weapons = [];
     this.thrustT = 0;
     this.t = 0;
@@ -83,7 +83,7 @@ class Player {
         game.particles.push(new Particle(
           this.x - this.dashVx * 0.02 + rand(-6, 6), this.y - this.dashVy * 0.02 + rand(-6, 6),
           -this.dashVx * 0.15 + rand(-40, 40), -this.dashVy * 0.15 + rand(-40, 40),
-          0.4, this.dashFusion ? '#ffb35d' : '#ff9d5d', rand(3, 6)
+          0.4, '#ff9d5d', rand(3, 6)
         ));
       }
       for (const e of game.enemies) {
@@ -94,10 +94,6 @@ class Player {
           e.hurt(this.dashDamage * zone.damageMul, game, true);
           const a = angleTo(this.x, this.y, zone.x, zone.y);
           if (!e.def?.boss) { e.x += Math.cos(a) * 26; e.y += Math.sin(a) * 26; }
-          if (this.dashFusion) {
-            const st = ALL_DEFS.siege.levelStats();
-            game.explosion(e.x, e.y, st.explodeR, st.explodeDmg * game.player.dmgMul, '#ffb35d');
-          }
         }
       }
       if (this.dashT <= 0) this.dashHits.clear();
@@ -809,20 +805,16 @@ class Gem {
 
 // ===== 等离子尾迹段 =====
 class TrailSeg {
-  constructor(x, y, r, life, dps, fusion, color) {
+  constructor(x, y, r, life, dps, color) {
     this.x = x; this.y = y; this.r = r;
     this.life = this.maxLife = life;
-    this.dps = dps; this.fusion = fusion; this.color = color;
+    this.dps = dps; this.color = color;
     this.dead = false;
   }
   update(dt, game) {
     this.life -= dt;
     if (this.life <= 0) {
       this.dead = true;
-      if (this.fusion) {
-        const st = ALL_DEFS.comet.levelStats();
-        game.explosion(this.x, this.y, st.explodeR, st.explodeDmg * game.player.dmgMul, this.color);
-      }
       return;
     }
     for (const e of game.enemies) {

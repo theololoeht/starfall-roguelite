@@ -3,20 +3,17 @@
 // 新增攻击方式 = config.js 加一条 def + 这里加一个 tick 函数。
 
 function makeWeapon(id) {
-  const def = ALL_DEFS[id];
+  const def = WEAPON_DEFS[id];
+  if (!def) throw new Error(`未知武器: ${id}`);
+  const tree = SKILL_TREES[id];
   return {
     id, def,
     level: 1,
-    max: def.maxLevel,
-    stats: def.levelStats(1),
+    max: tree ? null : def.maxLevel,
+    stats: tree ? { ...tree.forms.base.fire } : def.levelStats(1),
     t: 0,
     state: {},
   };
-}
-
-function upgradeWeapon(w) {
-  w.level = Math.min(w.max, w.level + 1);
-  w.stats = w.def.levelStats(w.level);
 }
 
 function updateWeapon(game, w, dt) {
@@ -139,11 +136,6 @@ function laserTick(game, w, dt) {
     const t2 = game.nearestEnemy(p.x, p.y, st.range, main);
     if (t2) fireLaserBeam(game, w, p, t2, 0.8, dt);
   }
-  // 棱镜折射（融合）：分裂至额外目标
-  if (w.def.fusion && st.splinter) {
-    const others = game.enemies.filter(e => !e.dead && !e.spawning && e !== main && dist(main.x, main.y, e.x, e.y) < st.splinterR).slice(0, st.splinter);
-    for (const e of others) fireLaserBeam(game, w, p, e, 0.6, dt);
-  }
   // Lv5 贯穿：光束延长线上的敌人受半额灼烧
   if (st.pierce) {
     const a = angleTo(p.x, p.y, main.x, main.y);
@@ -159,7 +151,7 @@ function laserTick(game, w, dt) {
 function fireLaserBeam(game, w, p, tgt, mul, dt) {
   const st = w.stats;
   const muzzle = playerMuzzleWorld(p, 0, 1);
-  game.beams.push({ x1: muzzle.x, y1: muzzle.y, x2: tgt.x, y2: tgt.y, color: w.def.color, width: st.width, fusion: w.def.fusion });
+  game.beams.push({ x1: muzzle.x, y1: muzzle.y, x2: tgt.x, y2: tgt.y, color: w.def.color, width: st.width });
   p.muzzleFlashT = 0.045;
   tgt.hurt(st.dps * p.dmgMul * mul * dt, game, false);
   if (Math.random() < dt * 25) game.burst(tgt.x + rand(-6, 6), tgt.y + rand(-6, 6), w.def.color, 1, 150);
@@ -179,7 +171,6 @@ function ramTick(game, w, dt) {
   p.dashVx = Math.cos(a) * st.dashSpeed;
   p.dashVy = Math.sin(a) * st.dashSpeed;
   p.dashDamage = st.damage * p.dmgMul;
-  p.dashFusion = !!w.def.fusion;
   p.dashHits.clear();
   p.iframes = Math.max(p.iframes, st.dashTime + 0.1);
   game.rings.push(new Ring(p.x, p.y, 8, 30, 0.25, w.def.color, 2));
@@ -438,21 +429,6 @@ function swordTick(game, w, dt) {
   }
 }
 
-// ── 融合：万刃轮舞（360° 持续旋转切割）────
-function bladestormTick(game, w, dt) {
-  const p = game.player, st = w.stats, s = w.state;
-  s.angle = (s.angle || 0) + dt * st.spinSpeed;
-  s.active = true;
-  s.tickT = (s.tickT || 0) - dt;
-  if (s.tickT > 0) return;
-  s.tickT = st.tick;
-  for (const e of game.enemies) {
-    if (e.dead || e.spawning) continue;
-    const zone = e.circleHit(p.x, p.y, st.radius);
-    if (zone) e.hurt(st.damage * p.dmgMul * zone.damageMul, game, false);
-  }
-}
-
 // ── 轨迹：等离子尾迹 ─────────────────────
 function trailTick(game, w, dt) {
   const p = game.player, st = w.stats;
@@ -461,7 +437,7 @@ function trailTick(game, w, dt) {
   const moving = Math.hypot(p.vx, p.vy) > 60 || p.dashT > 0;
   if (!moving) return;
   w.t = st.dropInterval;
-  game.trails.push(new TrailSeg(p.x, p.y, st.width / 2, st.segLife, st.dps * p.dmgMul, !!w.def.fusion, w.def.color));
+  game.trails.push(new TrailSeg(p.x, p.y, st.width / 2, st.segLife, st.dps * p.dmgMul, w.def.color));
 }
 
 function drawFlamebladeAttack({ ctx, owner:p, weapon:w, spec:st, key, attack }) {
@@ -520,19 +496,6 @@ function drawWeaponFx(game, ctx, w) {
     if (st.echo) FX.arcBlade(ctx, p.x, p.y, st.radius - 9, s.start, cur, '#ff8de8', alpha * 0.42, 4, s.dir < 0);
   }
   if (w.def.type === 'sword') for (const m of (s.marks || [])) FX.slashMark(ctx, m.x, m.y, m.angle, w.def.color, m.life / m.maxLife, 20);
-  if (w.def.type === 'sword_fusion' && s.active) {
-    const st = activeWeaponStats(p, w);
-    ctx.save(); ctx.translate(p.x, p.y);
-    ctx.beginPath(); ctx.arc(0, 0, st.radius, 0, TAU);
-    ctx.strokeStyle = hexA(w.def.color, 0.15); ctx.lineWidth = 10; ctx.stroke();
-    for (let k = 0; k < 3; k++) {
-      const a = s.angle + k * TAU / 3;
-      ctx.beginPath(); ctx.moveTo(0, 0);
-      ctx.lineTo(Math.cos(a) * st.radius, Math.sin(a) * st.radius);
-      ctx.strokeStyle = hexA(w.def.color, 0.75); ctx.lineWidth = 3; ctx.stroke();
-    }
-    ctx.restore();
-  }
 }
 
 const attackDamageMul = p => p?.dmgMul ?? 1;
@@ -612,11 +575,6 @@ registerAttackHandler('sword', {
   required: ['damage', 'interval', 'arc', 'radius', 'sweepTime'],
   update: ({ game, weapon, dt }) => swordTick(game, weapon, dt),
   estimateDps: (st, p) => st.damage / st.interval * attackDamageMul(p) * attackSpeedMul(p),
-});
-registerAttackHandler('sword_fusion', {
-  required: ['damage', 'tick', 'radius', 'spinSpeed'],
-  update: ({ game, weapon, dt }) => bladestormTick(game, weapon, dt),
-  estimateDps: (st, p) => st.damage / st.tick * attackDamageMul(p),
 });
 registerAttackHandler('trail', {
   required: ['dps', 'segLife', 'width', 'dropInterval'],

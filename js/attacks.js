@@ -30,11 +30,6 @@ function registerAttackHandler(kind, handler) {
 }
 
 function canonicalAttackKind(type) {
-  if (type === 'gun_fusion') return 'gun';
-  if (type === 'laser_fusion') return 'laser';
-  if (type === 'ram_fusion') return 'ram';
-  if (type === 'nova_fusion') return 'nova';
-  if (type === 'trail_fusion') return 'trail';
   return type;
 }
 
@@ -127,7 +122,7 @@ function validateAllAttackDefinitions() {
       validateAttackSpec(inferAttackKind(treeId, form.fire), form.fire, `SKILL_TREES.${treeId}.${formId}`);
     }
   }
-  for (const [id, def] of Object.entries(ALL_DEFS)) {
+  for (const [id, def] of Object.entries(WEAPON_DEFS)) {
     if (SKILL_TREES[id]) continue; // 技能树是这些武器的唯一权威运行配置。
     for (const level of [1, def.maxLevel]) {
       const spec = def.levelStats(level);

@@ -10,7 +10,7 @@ for (const file of ['js/utils.js', 'js/fx.js', 'js/config.js', 'js/attacks.js', 
 
 const result = vm.runInContext(`(() => {
   const valid = validateAllAttackDefinitions();
-  const kinds = ['gun','laser','ram','nova','pulse','spore','flameblade','mist','plague','sword','sword_fusion','trail'];
+  const kinds = ['gun','laser','ram','nova','pulse','spore','flameblade','mist','plague','sword','trail'];
   const registered = kinds.every(k => !!ATTACK_HANDLERS[k]);
 
   let invalidSporeRejected = false;

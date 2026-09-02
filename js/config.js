@@ -129,23 +129,12 @@ const ENEMY_DEFS = {
   },
 };
 
-// ===== 武器（开局自选其一，成长围绕它展开；Lv1~5，满级×2 二合一）=====
+// ===== 武器身份与实验原型数值 =====
 const WEAPON_DEFS = {
   cannon: {
     id: 'cannon', name: '脉冲机炮', icon: '🔫', color: '#4fd2ff', type: 'gun',
     tag: '传统射击',
     desc: '鼠标模式自动索敌；WASD 模式沿机头射击。蜂巢树可溅射、弹射、侧弦。',
-    maxLevel: 5,
-    levelStats(lv) {
-      return {
-        damage:     [0, 8, 11, 14, 18, 22][lv],
-        interval:   [0, 0.46, 0.42, 0.36, 0.31, 0.26][lv],
-        projectiles:[0, 1, 1, 2, 2, 3][lv],
-        bulletSpeed:[0, 640, 670, 700, 740, 780][lv],
-        bulletR: 4.5, pierce: 1,
-      };
-    },
-    levelNames: [null, '单发脉冲', '弹头强化', '双联并列', '高射速弹链', '三联散射'],
   },
   laser: {
     id: 'laser', name: '聚焦激光', icon: '🔆', color: '#ffe25d', type: 'laser',
@@ -181,35 +170,11 @@ const WEAPON_DEFS = {
     id: 'nova', name: '腐蚀孢子', icon: '☢️', color: '#8dff5d', type: 'nova',
     tag: 'DoT · 远程叠毒',
     desc: '机体周围释放漂移孢子，靠近敌机后激活追踪并叠加腐蚀；进化为焰刃或粒子雾。',
-    maxLevel: 5,
-    levelStats(lv) {
-      return {
-        pulseDmg:  [0, 10, 14, 19, 25, 32][lv],
-        radius:    [0, 95, 105, 118, 132, 150][lv],
-        interval:  [0, 2.4, 2.2, 2.0, 1.8, 1.5][lv],
-        stacks:    [0, 2, 2, 2, 3, 3][lv],
-        stackDps:  [0, 1.5, 2, 2.6, 3.2, 4][lv],
-        maxStacks: [0, 4, 5, 6, 7, 9][lv],
-        stackDuration: 3.5,
-      };
-    },
-    levelNames: [null, '腐蚀新星', '新星扩张', '酸蚀加浓', '高频脉冲', '万腐归宗'],
   },
   sword: {
     id: 'sword', name: '相位刃', icon: '⚔️', color: '#ff5de3', type: 'sword',
     tag: '挥剑 · 贴脸',
     desc: '机身周身弧形荧光斩击，适合在敌机群中穿行贴脸输出。',
-    maxLevel: 5,
-    levelStats(lv) {
-      return {
-        damage:    [0, 12, 17, 23, 31, 40][lv],
-        interval:  [0, 1.5, 1.35, 1.2, 1.05, 0.9][lv],
-        arc:       [0, 140, 150, 160, 170, 180][lv] * Math.PI / 180,
-        radius:    [0, 85, 95, 105, 118, 132][lv],
-        sweepTime: 0.22,
-      };
-    },
-    levelNames: [null, '单刃相位', '刃身延展', '弧光扩张', '高频斩击', '全向圆斩'],
   },
   trail: {
     id: 'trail', name: '矢量尾焰', icon: '🌠', color: '#5dffd2', type: 'trail',
@@ -227,56 +192,6 @@ const WEAPON_DEFS = {
     levelNames: [null, '离子喷洒', '尾焰增压', '等离子加浓', '宽域尾迹', '高能彗流'],
   },
 };
-
-// ===== 满级二合一：融合武器 =====
-const FUSION_DEFS = {
-  annihilator: {
-    id: 'annihilator', name: '双联湮灭炮', icon: '💥', color: '#7db8ff', type: 'gun_fusion',
-    fusion: true, from: 'cannon',
-    desc: '重装湮灭弹：巨型弹体，贯穿一切挡路之敌。',
-    maxLevel: 1,
-    levelStats() { return { damage: 48, interval: 0.72, projectiles: 1, bulletSpeed: 540, bulletR: 11, pierce: 5 }; },
-  },
-  prism: {
-    id: 'prism', name: '棱镜激光', icon: '💠', color: '#fff3b0', type: 'laser_fusion',
-    fusion: true, from: 'laser',
-    desc: '棱镜折射：主光束自动分裂折射至最多 2 个额外目标。',
-    maxLevel: 1,
-    levelStats() { return { dps: 85, width: 10, range: 470, beams: 1, splinter: 2, splinterR: 230 }; },
-  },
-  siege: {
-    id: 'siege', name: '攻城巨角', icon: '🐗', color: '#ffb35d', type: 'ram_fusion',
-    fusion: true, from: 'ram',
-    desc: '过载突进，每次撞击原地爆发范围爆炸。',
-    maxLevel: 1,
-    levelStats() { return { damage: 85, interval: 2.2, dashSpeed: 1050, dashTime: 0.34, explodeR: 130, explodeDmg: 45 }; },
-  },
-  singularity: {
-    id: 'singularity', name: '奇点新星', icon: '🌀', color: '#c8ff5d', type: 'nova_fusion',
-    fusion: true, from: 'nova',
-    desc: '奇点坍缩：新星半径与腐蚀层数上限翻倍，高频坍缩脉冲。',
-    maxLevel: 1,
-    levelStats() { return { pulseDmg: 60, radius: 210, interval: 1.4, stacks: 4, stackDps: 7, maxStacks: 14, stackDuration: 4 }; },
-  },
-  bladestorm: {
-    id: 'bladestorm', name: '万刃轮舞', icon: '🌪️', color: '#ff5dff', type: 'sword_fusion',
-    fusion: true, from: 'sword',
-    desc: '刃刃相续，绕身 360° 无休旋转切割。',
-    maxLevel: 1,
-    levelStats() { return { damage: 15, tick: 0.15, radius: 140, spinSpeed: 6 }; },
-  },
-  comet: {
-    id: 'comet', name: '等离子彗尾', icon: '☄️', color: '#5dffe8', type: 'trail_fusion',
-    fusion: true, from: 'trail',
-    desc: '彗尾自行引爆：尾迹消散时原地炸出等离子风暴。',
-    maxLevel: 1,
-    levelStats() { return { dps: 34, segLife: 3.4, width: 56, dropInterval: 0.06, explodeR: 90, explodeDmg: 26 }; },
-  },
-};
-
-// 基础武器 id → 融合武器 id
-const FUSION_MAP = { cannon: 'annihilator', laser: 'prism', ram: 'siege', nova: 'singularity', sword: 'bladestorm', trail: 'comet' };
-const ALL_DEFS = { ...WEAPON_DEFS, ...FUSION_DEFS };
 
 // ===== 蜂巢技能树（v0.6：节点=特殊效果，不再是纯数值）=====
 const SKILL_TREES = {
